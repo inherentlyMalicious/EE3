@@ -146,9 +146,9 @@ void setup() {
 }
 
 void loop() {
-  powerLED(GREEN, HIGH);
-  powerLED(BLUE, HIGH);
-  powerLED(RED, HIGH);
+  powerLED(LED_G, HIGH);
+  powerLED(LED_B, HIGH);
+  powerLED(LED_R, HIGH);
 
 //  Serial.print("Front: ");
 //  Serial.print(readSensor(IR_FRONT));
