@@ -1,6 +1,6 @@
-#define IRSensor_Front  "A0"
-#define IRSensor_Left   "A3"
-#define IRSensor_Right  "A7"
+#define IRSensor_Front  A0
+#define IRSensor_Left   A3
+#define IRSensor_Right  A7
 
 enum IRSENSOR {
   IR_FRONT,
@@ -22,19 +22,26 @@ enum LED {
 const int ON = 1;
 const int OFF = 0;
 
+const int IR_LEFT_GOAL = 775;
+const int IR_FRONT_GOAL = 575;
+const int IR_RIGHT_GOAL = 475;
+
 #define LEFT_MOTOR      11
 // 31 to start, 12 at lowest
 #define RIGHT_MOTOR     3
 // 31 to start, 15 at lowest
 
-const int LEFT_MOTOR_THRESHOLD = 40;
-const int RIGHT_MOTOR_THRESHOLD = 40;
+const int LEFT_MOTOR_THRESHOLD = 26;
+const int RIGHT_MOTOR_THRESHOLD = 25;
 
-const int LEFT_MOTOR_BASEVALUE = 50;
-const int RIGHT_MOTOR_BASEVALUE = 50;
+const int LEFT_MOTOR_BASEVALUE = 38;
+const int RIGHT_MOTOR_BASEVALUE = 38;
 
-const int RIGHT_MOTOR_MAX = 100;
-const int LEFT_MOTOR_MAX = 100;
+const int LEFT_MOTOR_OFFVALUE = 16;
+const int RIGHT_MOTOR_OFFVALUE = 15;
+
+const int LEFT_MOTOR_MAX = 55;
+const int RIGHT_MOTOR_MAX = 50;
 
 enum Direction {
   FORWARD,
@@ -85,14 +92,42 @@ void powerLED(LED led, int power) {
 }
 
 void powerMotor(Direction dir, int adjustment) {
+  //int leftPower = map(analogRead(LEFT_MOTOR), 1000, 0, 0, 100);
+  //int rightPower = map(analogRead(RIGHT_MOTOR), 1000, 0, 0, 100);
   int leftPower = analogRead(LEFT_MOTOR);
   int rightPower = analogRead(RIGHT_MOTOR);
+
+  Serial.print("Left motor value:");
+  Serial.print(leftPower);
+  Serial.print("\n");
+  Serial.print(map(analogRead(LEFT_MOTOR), 1000, 0, 0, 100));
+  Serial.print("\n");
+  Serial.print("Right motor value:");
+  Serial.print(rightPower);
+  Serial.print("\n");
+  Serial.print(map(analogRead(RIGHT_MOTOR), 1000, 0, 0, 100));
+  Serial.print("\n");
+  
+//  if (leftPower <= LEFT_MOTOR_OFFVALUE || rightPower <= RIGHT_MOTOR_OFFVALUE) {
+//    powerLED(RED, ON);
+//    analogWrite(LEFT_MOTOR, 0);
+//    analogWrite(RIGHT_MOTOR, 0);
+//    delay(50);
+//    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
+//    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
+//    delay(500);
+//    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
+//    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
+//    powerLED(RED, OFF);
+//    delay(50);
+//    return;
+//  }
   
   switch (dir) {
     case FORWARD:
       powerLED(GREEN, ON);
-      leftPower += 5;
-      leftPower += 5;
+      leftPower += adjustment;
+      rightPower += adjustment;
       break;
     case LEFT:
       powerLED(RED, ON);
@@ -146,30 +181,27 @@ void setup() {
 }
 
 void loop() {
-  powerLED(LED_G, HIGH);
-  powerLED(LED_B, HIGH);
-  powerLED(LED_R, HIGH);
+  powerLED(ALL, ON);
+  delay(1500);
+  powerLED(GREEN, OFF);
+  delay(1500);
+  powerLED(RED, OFF);
+  delay(1500);
+  powerLED(BLUE, OFF);
 
-//  Serial.print("Front: ");
-//  Serial.print(readSensor(IR_FRONT));
-//  Serial.print("\n");
-//  Serial.print("Left: ");
-//  Serial.print(readSensor(IR_LEFT));
-//  Serial.print("\n");
-//  Serial.print("Right: ");
-//  Serial.print(readSensor(IR_RIGHT));
-//  Serial.print("\n");
+  powerLED(RED, ON);
+    analogWrite(LEFT_MOTOR, 0);
+    analogWrite(RIGHT_MOTOR, 0);
+    delay(50);
+    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
+    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
+    delay(500);
+    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
+    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
+    powerLED(RED, OFF);
+    delay(50);
 
-//  int speed = 31;
-//  while (speed > 12) {
-//    analogWrite(RIGHT_MOTOR, map(speed, 0, 100, 0, 255));
-//    Serial.print("Current speed is: ");
-//    Serial.print(speed);
-//    Serial.print("\n");
-//    speed -= 1;
-//    delay(2000);
-//  }
-//  analogWrite(LEFT_MOTOR, map(0, 0, 100, 0, 255));
-
-  delay(1000);
+  while (true) {
+    powerMotor(FORWARD, 0);
+  }
 }
