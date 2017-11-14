@@ -31,11 +31,11 @@ const int IR_RIGHT_GOAL = 475;
 #define RIGHT_MOTOR     3
 // 31 to start, 15 at lowest
 
-const int LEFT_MOTOR_THRESHOLD = 26;
-const int RIGHT_MOTOR_THRESHOLD = 25;
+const int LEFT_MOTOR_THRESHOLD = 29;
+const int RIGHT_MOTOR_THRESHOLD = 31;
 
-const int LEFT_MOTOR_BASEVALUE = 38;
-const int RIGHT_MOTOR_BASEVALUE = 38;
+const int LEFT_MOTOR_BASEVALUE = 37; //Originally 38 each
+const int RIGHT_MOTOR_BASEVALUE = 39;
 
 const int LEFT_MOTOR_OFFVALUE = 16;
 const int RIGHT_MOTOR_OFFVALUE = 15;
@@ -97,16 +97,16 @@ void powerMotor(Direction dir, int adjustment) {
   int leftPower = analogRead(LEFT_MOTOR);
   int rightPower = analogRead(RIGHT_MOTOR);
 
-  Serial.print("Left motor value:");
-  Serial.print(leftPower);
-  Serial.print("\n");
-  Serial.print(map(analogRead(LEFT_MOTOR), 1000, 0, 0, 100));
-  Serial.print("\n");
-  Serial.print("Right motor value:");
-  Serial.print(rightPower);
-  Serial.print("\n");
-  Serial.print(map(analogRead(RIGHT_MOTOR), 1000, 0, 0, 100));
-  Serial.print("\n");
+  //Serial.print("Left motor value:");
+  //Serial.print(leftPower);
+  //Serial.print("\n");
+  //Serial.print(map(analogRead(LEFT_MOTOR), 1000, 0, 0, 100));
+  //Serial.print("\n");
+  //Serial.print("Right motor value:");
+  //Serial.print(rightPower);
+  //Serial.print("\n");
+  //Serial.print(map(analogRead(RIGHT_MOTOR), 1000, 0, 0, 100));
+  //Serial.print("\n");
   
 //  if (leftPower <= LEFT_MOTOR_OFFVALUE || rightPower <= RIGHT_MOTOR_OFFVALUE) {
 //    powerLED(RED, ON);
@@ -195,13 +195,13 @@ void loop() {
     delay(50);
     analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
     analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
-    delay(500);
+    delay(1000);
     analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
     analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
     powerLED(RED, OFF);
     delay(50);
 
   while (true) {
-    powerMotor(FORWARD, 0);
+    //powerMotor(FORWARD, 0);
   }
 }
