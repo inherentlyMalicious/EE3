@@ -44,11 +44,20 @@ const int LEFT_MOTOR_MAX = 55;
 const int RIGHT_MOTOR_MAX = 50;
 
 enum Direction {
+  NONE,
   FORWARD,
   LEFT,
   RIGHT,
   STOP
 };
+
+double locationOld = 0;
+unsigned long timeOld = 0;
+double errorSum = 0;
+
+double kp = 5;
+double kd = 0;
+double ki = 0;
 
 /*** WHEN READING IN SENSORS, NOT THEM TO GET TRUE VALUE */
 
@@ -126,18 +135,21 @@ void powerMotor(Direction dir, int adjustment) {
   switch (dir) {
     case FORWARD:
       powerLED(GREEN, ON);
-      leftPower += adjustment;
-      rightPower += adjustment;
+      analogWrite(LEFT_MOTOR, LEFT_MOTOR_THRESHOLD);
+      analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_THRESHOLD);
+      return;
+      //leftPower += adjustment;
+      //rightPower += adjustment;
       break;
     case LEFT:
       powerLED(RED, ON);
-      leftPower -= adjustment;
+      //leftPower -= adjustment;
       rightPower += adjustment;
       break;
     case RIGHT:
       powerLED(BLUE, ON);
       leftPower += adjustment;
-      rightPower -= adjustment;
+      //rightPower -= adjustment;
       break;
     case STOP:
       powerLED(RED, ON);
@@ -163,6 +175,97 @@ int readSensor(IRSENSOR sensor) {
     default:
       return 0;  
   }
+}
+
+double getLocation() {
+  const int VALUE_CLOSE_F = 575;
+  const int VALUE_CLOSE_L = 775;
+  const int VALUE_CLOSE_R = 475;
+  const int VALUE_TARGET_F = 500;
+  const int VALUE_TARGET_L = 725;
+  const int VALUE_TARGET_R = 425;
+  const int SLOPE_CLOSE_F = 412;
+  const int SLOPE_CLOSE_L = 216;
+  const int SLOPE_CLOSE_R = 512;
+  const int SLOPE_TARGET_F = 75;
+  const int SLOPE_TARGET_L = 50;
+  const int SLOPE_TARGET_R = 50;
+  const int VALUE_MAX = 980;
+
+  int valFront = readSensor(IR_FRONT);
+  double locFront = 2.1;
+  if (valFront <= VALUE_MAX) {
+    locFront += 1;
+    locFront += ((valFront - VALUE_CLOSE_F)/SLOPE_CLOSE_F);
+  }
+  else {
+    locFront += ((valFront - VALUE_TARGET_F)/SLOPE_TARGET_F);
+  }
+  int valLeft = readSensor(IR_LEFT);
+  double locLeft = 2.1;
+  if (valLeft <= VALUE_MAX) {
+    locLeft += 1;
+    locLeft += ((valLeft - VALUE_CLOSE_L)/SLOPE_CLOSE_L);
+  }
+  else {
+    locLeft += ((valLeft - VALUE_TARGET_L)/SLOPE_TARGET_L);
+  }
+  
+  int valRight = readSensor(IR_RIGHT);
+  double locRight = 2.1;
+  if (valRight <= VALUE_MAX) {
+    locRight += 1;
+    locRight += ((valRight - VALUE_CLOSE_R)/SLOPE_CLOSE_R);
+  }
+  else {
+    locRight += ((valRight - VALUE_TARGET_R)/SLOPE_TARGET_R);
+  }
+
+  if (locFront <= 2) {
+    if (locLeft <= 2) {
+      return -locFront; // Line is between front and left sensors
+    } else {
+      return locFront; // Line is between front and right sensors
+    }
+  } else if (locLeft <= 2) {
+    return -(locLeft + 2); // Line is past sensor on left
+  } else {
+    return locRight + 2; // Line is past sensor on right
+  }
+
+  return 666;
+}
+
+void movementCalculation(Direction* dir, double* output) {
+  // Error check with Direction:NONE?
+  unsigned long timeCur = millis();
+  double timeChange = timeCur - timeOld;
+
+  double locationCur = getLocation();
+
+  double error = locationCur;
+  double errorChange = (locationCur - locationOld) / timeChange;
+  errorSum += (error * timeChange);
+
+  if (error < -0.5) {
+    if (*dir != RIGHT) {
+      errorSum = 0;
+    }
+    *dir = RIGHT;
+  } else if (error > 0.5) {
+    *dir = LEFT;
+    if (*dir != LEFT) {
+      errorSum = 0;
+    }
+  } else {
+    errorSum = 0;
+    *dir = FORWARD;
+  }
+
+  *output = kp * error + kd * errorChange + ki * errorSum;
+
+  locationOld = locationCur;
+  timeOld = timeCur;
 }
 
 void setup() {
@@ -202,6 +305,11 @@ void loop() {
     delay(50);
 
   while (true) {
-    //powerMotor(FORWARD, 0);
+    Direction dir = NONE;
+    double ammount = 0;
+
+    movementCalculation(&dir, &ammount);
+
+    powerMotor(dir, ammount);
   }
 }
