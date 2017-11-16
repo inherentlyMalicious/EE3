@@ -51,6 +51,32 @@ enum Direction {
   STOP
 };
 
+enum Zone {
+    LEFT_FAR_L,
+    LEFT_CLOSE_L,
+    LEFT_CLOSE_R,
+    LEFT_FAR_R,
+    LEFT_OFF,
+    FRONT_FAR_L,
+    FRONT_CLOSE_L,
+    FRONT_ON,
+    FRONT_CLOSE_R,
+    FRONT_FAR_R,
+    FRONT_OFF,
+    RIGHT_FAR_L,
+    RIGHT_CLOSE_L,
+    RIGHT_CLOSE_R,
+    RIGHT_FAR_R,
+    RIGHT_OFF
+};
+
+struct state {
+  Zone zone;
+  Direction dir;
+};
+
+typedef struct state State;
+
 double locationOld = 0;
 unsigned long timeOld = 0;
 double errorSum = 0;
@@ -100,7 +126,7 @@ void powerLED(LED led, int power) {
   }
 }
 
-void powerMotor(Direction dir, int adjustment) {
+void powerMotor(Direction dir, int amount) {
   //int leftPower = map(analogRead(LEFT_MOTOR), 1000, 0, 0, 100);
   //int rightPower = map(analogRead(RIGHT_MOTOR), 1000, 0, 0, 100);
   int leftPower = analogRead(LEFT_MOTOR);
@@ -135,21 +161,16 @@ void powerMotor(Direction dir, int adjustment) {
   switch (dir) {
     case FORWARD:
       powerLED(GREEN, ON);
-      analogWrite(LEFT_MOTOR, LEFT_MOTOR_THRESHOLD);
-      analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_THRESHOLD);
-      return;
-      //leftPower += adjustment;
-      //rightPower += adjustment;
       break;
     case LEFT:
       powerLED(RED, ON);
-      //leftPower -= adjustment;
-      rightPower += adjustment;
+      rightPower = RIGHT_MOTOR_THRESHOLD + amount;
+      leftPower = LEFT_MOTOR_THRESHOLD - amount;
       break;
     case RIGHT:
       powerLED(BLUE, ON);
-      leftPower += adjustment;
-      //rightPower -= adjustment;
+      leftPower = LEFT_MOTOR_THRESHOLD + amount;
+      rightPower = RIGHT_MOTOR_THRESHOLD - amount;
       break;
     case STOP:
       powerLED(RED, ON);
@@ -178,62 +199,38 @@ int readSensor(IRSENSOR sensor) {
 }
 
 double getLocation() {
-  const int VALUE_CLOSE_F = 575;
-  const int VALUE_CLOSE_L = 775;
-  const int VALUE_CLOSE_R = 475;
-  const int VALUE_TARGET_F = 500;
-  const int VALUE_TARGET_L = 725;
-  const int VALUE_TARGET_R = 425;
-  const int SLOPE_CLOSE_F = 412;
-  const int SLOPE_CLOSE_L = 216;
-  const int SLOPE_CLOSE_R = 512;
-  const int SLOPE_TARGET_F = 75;
-  const int SLOPE_TARGET_L = 50;
-  const int SLOPE_TARGET_R = 50;
-  const int VALUE_MAX = 980;
+  const int ZONE_LEFT_FAR = 0;
+  const int ZONE_LEFT_CLOSE = 1;
+  const int ZONE_ON = 2;
+  const int ZONE_RIGHT_CLOSE = 3;
+  const int ZONE_RIGHT_FAR = 4;
+
+  const int RIGHT_THRESHOLDS[5] = {986, 660, 528, 825, 986};
+  const int RIGHT_SLOPES[5] = {-163, -66, 0, 148.5, 80.5};
+  const int FRONT_THRESHOLDS[5] = {985, 922, 641, 767, 975};
+  const int FRONT_SLOPES[5] = {-31.5, -140.5, 0, 63, 104};
+  const int LEFT_THRESHOLDS[5] = {990, 970, 699, 761, 985};
+  const int LEFT_SLOPES[5] = {-10, -135.5, 0, 31, 112};
 
   int valFront = readSensor(IR_FRONT);
-  double locFront = 2.1;
-  if (valFront <= VALUE_MAX) {
-    locFront += 1;
-    locFront += ((valFront - VALUE_CLOSE_F)/SLOPE_CLOSE_F);
-  }
-  else {
-    locFront += ((valFront - VALUE_TARGET_F)/SLOPE_TARGET_F);
-  }
   int valLeft = readSensor(IR_LEFT);
-  double locLeft = 2.1;
-  if (valLeft <= VALUE_MAX) {
-    locLeft += 1;
-    locLeft += ((valLeft - VALUE_CLOSE_L)/SLOPE_CLOSE_L);
-  }
-  else {
-    locLeft += ((valLeft - VALUE_TARGET_L)/SLOPE_TARGET_L);
-  }
-  
   int valRight = readSensor(IR_RIGHT);
-  double locRight = 2.1;
-  if (valRight <= VALUE_MAX) {
-    locRight += 1;
-    locRight += ((valRight - VALUE_CLOSE_R)/SLOPE_CLOSE_R);
-  }
-  else {
-    locRight += ((valRight - VALUE_TARGET_R)/SLOPE_TARGET_R);
-  }
-
-  if (locFront <= 2) {
-    if (locLeft <= 2) {
-      return -locFront; // Line is between front and left sensors
-    } else {
-      return locFront; // Line is between front and right sensors
+  
+  if (curState.direction == LEFT) {
+    
+  } else if (curState.direction == RIGHT) {
+    
+  } else { // direction is forward
+    if (valLeft <= LEFT_THRESHOLDS[ZONE_RIGHT_FAR]) {
+      curState.direction = LEFT;
+      curState.zone = RIGHT_FAR_L;
+    } else if (valRight <= RIGHT_THRESHOLDS[ZONE_LEFT_FAR]) {
+      curState.direction = RIGHT;
+      curState.zone = LEFT_FAR_R;
+    } else { // All is good and going forward
+      return 0;
     }
-  } else if (locLeft <= 2) {
-    return -(locLeft + 2); // Line is past sensor on left
-  } else {
-    return locRight + 2; // Line is past sensor on right
   }
-
-  return 666;
 }
 
 void movementCalculation(Direction* dir, double* output) {
@@ -280,6 +277,10 @@ void setup() {
   pinMode(LEFT_MOTOR, OUTPUT);
   pinMode(RIGHT_MOTOR, OUTPUT);
 
+  State stateCur;
+  stateCur.zone = FRONT_ON;
+  stateCur.dir = FOWARD;
+
   Serial.begin(9600);
 }
 
@@ -292,24 +293,40 @@ void loop() {
   delay(1500);
   powerLED(BLUE, OFF);
 
-  powerLED(RED, ON);
-    analogWrite(LEFT_MOTOR, 0);
-    analogWrite(RIGHT_MOTOR, 0);
-    delay(50);
-    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
-    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
-    delay(1000);
-    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
-    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
-    powerLED(RED, OFF);
-    delay(50);
-
   while (true) {
-    Direction dir = NONE;
-    double ammount = 0;
-
-    movementCalculation(&dir, &ammount);
-
-    powerMotor(dir, ammount);
+  Serial.print("Left sensor: ");
+  Serial.print(readSensor(IR_LEFT));
+  Serial.print("\n");
+  Serial.print("Front sensor: ");
+  Serial.print(readSensor(IR_FRONT));
+  Serial.print("\n");
+  Serial.print("Right sensor: ");
+  Serial.print(readSensor(IR_RIGHT));
+  Serial.print("\n");
+  delay(1500);
   }
+
+//  int previousState[2] = {2, curDir};
+  
+  
+//  powerLED(RED, ON);
+//    analogWrite(LEFT_MOTOR, 0);
+//    analogWrite(RIGHT_MOTOR, 0);
+//    delay(50);
+//    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
+//    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
+//    delay(1000);
+//    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
+//    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
+//    powerLED(RED, OFF);
+//    delay(50);
+//
+//  while (true) {
+//    Direction dir = NONE;
+//    double ammount = 0;
+//
+//    movementCalculation(&dir, &ammount);
+//
+//    powerMotor(dir, ammount);
+//  }
 }
