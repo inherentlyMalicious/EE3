@@ -31,17 +31,17 @@ const int IR_RIGHT_GOAL = 475;
 #define RIGHT_MOTOR     3
 // 31 to start, 15 at lowest
 
-const int LEFT_MOTOR_THRESHOLD = 29;
-const int RIGHT_MOTOR_THRESHOLD = 31;
+const int LEFT_MOTOR_THRESHOLD = 34;
+const int RIGHT_MOTOR_THRESHOLD = 37;
 
-const int LEFT_MOTOR_BASEVALUE = 37; //Originally 38 each
+const int LEFT_MOTOR_BASEVALUE = 39; //Originally 38 each
 const int RIGHT_MOTOR_BASEVALUE = 39;
 
 const int LEFT_MOTOR_OFFVALUE = 16;
 const int RIGHT_MOTOR_OFFVALUE = 15;
 
-const int LEFT_MOTOR_MAX = 55;
-const int RIGHT_MOTOR_MAX = 50;
+const int LEFT_MOTOR_MAX = 100;
+const int RIGHT_MOTOR_MAX = 100;
 
 enum Direction {
   NONE,
@@ -76,9 +76,12 @@ double locationOld = 0;
 unsigned long timeOld = 0;
 double errorSum = 0;
 
-double kp = 5;
+double kp = 0.6;
 double kd = 0;
 double ki = 0;
+
+  Direction dir = NONE;
+  double ammount = 0;
 
 /*** WHEN READING IN SENSORS, NOT THEM TO GET TRUE VALUE */
 
@@ -122,8 +125,9 @@ void powerLED(LED led, int power) {
 }
 
 void powerMotor(Direction dir, int amount) {
-  int leftPower = analogRead(LEFT_MOTOR);
-  int rightPower = analogRead(RIGHT_MOTOR);
+//  int leftPower = analogRead(LEFT_MOTOR);
+//  int rightPower = analogRead(RIGHT_MOTOR);
+  int leftPower, rightPower;
   
   switch (dir) {
     case FORWARD:
@@ -131,13 +135,13 @@ void powerMotor(Direction dir, int amount) {
       break;
     case LEFT:
       powerLED(RED, ON);
-      rightPower = RIGHT_MOTOR_THRESHOLD + amount;
-      leftPower = LEFT_MOTOR_THRESHOLD - amount;
+      rightPower = RIGHT_MOTOR_BASEVALUE + amount;
+      leftPower = LEFT_MOTOR_BASEVALUE;
       break;
     case RIGHT:
       powerLED(BLUE, ON);
-      leftPower = LEFT_MOTOR_THRESHOLD + amount;
-      rightPower = RIGHT_MOTOR_THRESHOLD - amount;
+      leftPower = LEFT_MOTOR_BASEVALUE + amount;
+      rightPower = RIGHT_MOTOR_BASEVALUE;
       break;
     case STOP:
       powerLED(RED, ON);
@@ -147,9 +151,10 @@ void powerMotor(Direction dir, int amount) {
     default:
       return;
   }
-
-  analogWrite(LEFT_MOTOR, min( max(leftPower, LEFT_MOTOR_THRESHOLD), LEFT_MOTOR_MAX));
-  analogWrite(RIGHT_MOTOR, min( max(rightPower, RIGHT_MOTOR_THRESHOLD), RIGHT_MOTOR_MAX));
+  int leftPowerLimited = min( max(leftPower, LEFT_MOTOR_THRESHOLD), LEFT_MOTOR_MAX);
+  int rightPowerLimited = min( max(rightPower, RIGHT_MOTOR_THRESHOLD), RIGHT_MOTOR_MAX);
+  analogWrite(LEFT_MOTOR, map(leftPowerLimited, 0.0, 100.0, 0.0, 255.0));
+  analogWrite(RIGHT_MOTOR, map(rightPowerLimited, 0.0, 100.0, 0.0, 255.0));
 }
 
 int readSensor(IRSENSOR sensor) {
@@ -165,12 +170,28 @@ int readSensor(IRSENSOR sensor) {
   }
 }
 
+void setDirection() {
+  int valLeft = readSensor(IR_LEFT);
+  int valRight = readSensor(IR_RIGHT);
+  if (valLeft <= 980) {
+    curState.zone = ZONE_LEFT_CLOSE;
+    curState.dir = LEFT;
+    curState.side = RIGHT;
+    getLocation();
+  } else if (valRight <= 980) {
+    curState.zone = ZONE_RIGHT_CLOSE;
+    curState.dir = RIGHT;
+    curState.side = LEFT;
+    getLocation();
+  }
+}
+
 double getLocation() {
   
-  const int valLeftTarget = 750;
-  const int valLeftMax = 991;
+  const int valLeftTarget = 700;
+  const int valLeftMax = 980;
   const int valFrontTarget = 700;
-  const int valFrontMax = 987;
+  const int valFrontMax = 980;
   const int valRightTarget = 600;
   const int valRightMax = 980;
 
@@ -182,43 +203,42 @@ double getLocation() {
   float absDistanceRight = pow(abs(((valRight - 596.321) / 401) - 0.041), 0.5);
   switch (curState.zone) {
     case ZONE_LEFT_FAR:
-      if (curState.dir == RIGHT && valLeft <= valLeftMax) {
+      if (curState.dir == LEFT && valLeft <= valLeftMax) {
         curState.zone = ZONE_LEFT_CLOSE;
         curState.side = LEFT;
       }
       break;
-    case ZONE_LEFT_CLOSE:
+      case ZONE_LEFT_CLOSE:
       switch (curState.dir) {
-        case RIGHT:
+        case LEFT:
           if (curState.side == LEFT && valLeft <= valLeftTarget) {
             curState.side = RIGHT;
-          } else if (curState.side == RIGHT && valLeft >= valLeftTarget) {
+          } else if (curState.side == RIGHT && valLeft >= valLeftMax) {
             curState.zone = ZONE_LEFT_GAP;
           }
         break;
-        case LEFT:
+        case RIGHT:
           if (curState.side == RIGHT && valLeft <= valLeftTarget) {
             curState.side = LEFT;
-          } else if (curState.side == LEFT && valLeft >= valLeftTarget) {
+          } else if (curState.side == LEFT && valLeft >= valLeftMax) {
             curState.zone = ZONE_LEFT_FAR;
           }
         break;
         default:
-        break;
+          break;
       }
       break;
     case ZONE_LEFT_GAP:
       switch (curState.dir) {
         case RIGHT:
+          if (valLeft <= valLeftMax) {
+            curState.zone = ZONE_LEFT_CLOSE;
+            curState.side = RIGHT;
+          }
+        case LEFT:
           if (valFront <= valFrontMax) {
             curState.zone = ZONE_FRONT;
             curState.side = LEFT;
-          }
-        break;
-        case LEFT:
-          if (valLeft <= valLeftMax) {
-            curState.zone = ZONE_LEFT_FAR;
-            curState.side = RIGHT;
           }
         break;
         default:
@@ -228,17 +248,17 @@ double getLocation() {
     case ZONE_FRONT:
       switch (curState.dir) {
         case RIGHT:
-          if (curState.side == LEFT && valFront <= valFrontTarget) {
-            curState.side = RIGHT;
-          } else if (curState.side == RIGHT && valFront >= valFrontTarget) {
-            curState.zone = ZONE_RIGHT_GAP;
+          if (curState.side == RIGHT && valFront <= valFrontTarget) {
+            curState.side = LEFT;
+          } else if (curState.side == LEFT && valFront >= valFrontMax) {
+            curState.zone = ZONE_LEFT_GAP;
           }
         break;
         case LEFT:
-          if (curState.side == RIGHT && valFront <= valFrontTarget) {
-            curState.side = LEFT;
-          } else if (curState.side == LEFT && valFront >= valFrontTarget) {
-            curState.zone = ZONE_LEFT_GAP;
+          if (curState.side == LEFT && valFront <= valFrontTarget) {
+            curState.side = RIGHT;
+          } else if (curState.side == RIGHT && valFront >= valFrontMax) {
+            curState.zone = ZONE_RIGHT_GAP;
           }
         break;
         default:
@@ -247,12 +267,12 @@ double getLocation() {
       break;
     case ZONE_RIGHT_GAP:
       switch (curState.dir) {
-        case RIGHT:
+        case LEFT:
           if (valRight <= valRightMax) {
             curState.zone = ZONE_RIGHT_CLOSE;
             curState.side = LEFT;
           }
-        case LEFT:
+        case RIGHT:
           if (valFront <= valFrontMax) {
             curState.zone = ZONE_FRONT;
             curState.side = RIGHT;
@@ -265,19 +285,17 @@ double getLocation() {
     case ZONE_RIGHT_CLOSE:
       switch (curState.dir) {
         case LEFT:
-          Serial.println("Inside LEFT");
           if (curState.side == LEFT && valRight <= valRightTarget) {
             curState.side = RIGHT;
           } else if (curState.side == RIGHT && valRight >= valRightMax) {
-            curState.zone = ZONE_RIGHT_GAP;
+            curState.zone = ZONE_RIGHT_FAR;
           }
         break;
         case RIGHT:
-          Serial.println("Inside RIGHT");
           if (curState.side == RIGHT && valRight <= valRightTarget) {
             curState.side = LEFT;
           } else if (curState.side == LEFT && valRight >= valRightMax) {
-            curState.zone = ZONE_RIGHT_FAR;
+            curState.zone = ZONE_RIGHT_GAP;
           }
         break;
         default:
@@ -287,7 +305,7 @@ double getLocation() {
     case ZONE_RIGHT_FAR:
       if (curState.dir == RIGHT && valRight <= valRightMax) {
         curState.zone = ZONE_RIGHT_CLOSE;
-        curState.side = LEFT;
+        curState.side = RIGHT;
       }
       break;
   }
@@ -372,14 +390,12 @@ void setup() {
   pinMode(LEFT_MOTOR, OUTPUT);
   pinMode(RIGHT_MOTOR, OUTPUT);
 
-  curState.zone = ZONE_LEFT_FAR;
-  curState.side = LEFT;
-  curState.dir = RIGHT;
+  curState.zone = ZONE_FRONT;
+  curState.side = NONE;
+  curState.dir = FORWARD;
 
   Serial.begin(9600);
-}
 
-void loop() {
   powerLED(ALL, ON);
   delay(1500);
   powerLED(GREEN, OFF);
@@ -388,12 +404,27 @@ void loop() {
   delay(1500);
   powerLED(BLUE, OFF);
 
-  /* NOTE: Start arduino off on right side of line */
-  while (true) {
-  int currentloc = getLocation();
-  Serial.println("New loop");
-  Serial.print("Location: ");
-  Serial.println(currentloc);
+ // Kickstart
+    powerLED(RED, ON);
+    analogWrite(LEFT_MOTOR, 0);
+    analogWrite(RIGHT_MOTOR, 0);
+    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
+    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
+    delay(50);
+    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
+    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
+    delay(50);
+    powerLED(RED, OFF);
+}
+
+void loop() {
+  if (curState.side == NONE) {
+    setDirection();
+  } else {
+    movementCalculation(&dir, &ammount);
+    powerMotor(dir, ammount);  
+  }
+
   Serial.print("Zone: ");
   Zone currentzone = curState.zone;
   switch (currentzone) {
@@ -443,30 +474,6 @@ void loop() {
       default:
       break;
     }
-  delay(400);
-  }
 
-//  int previousState[2] = {2, curDir};
-  
-  
-//  powerLED(RED, ON);
-//    analogWrite(LEFT_MOTOR, 0);
-//    analogWrite(RIGHT_MOTOR, 0);
-//    delay(50);
-//    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
-//    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
-//    delay(1000);
-//    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
-//    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
-//    powerLED(RED, OFF);
-//    delay(50);
-//
-//  while (true) {
-//    Direction dir = NONE;
-//    double ammount = 0;
-//
-//    movementCalculation(&dir, &ammount);
-//
-//    powerMotor(dir, ammount);
-//  }
+  powerLED(ALL, OFF);
 }
