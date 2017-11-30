@@ -31,11 +31,11 @@ const int OFF = 0;
 #define RIGHT_MOTOR     3
 // 31 to start, 15 at lowest
 
-const int LEFT_MOTOR_THRESHOLD = 34;
-const int RIGHT_MOTOR_THRESHOLD = 40;
+const int LEFT_MOTOR_THRESHOLD = 20;//34;
+const int RIGHT_MOTOR_THRESHOLD = 19;//40;
 
-const int LEFT_MOTOR_BASEVALUE = 39; //Originally 38 each
-const int RIGHT_MOTOR_BASEVALUE = 39;
+const int LEFT_MOTOR_BASEVALUE = 32; //Originally 38 each
+const int RIGHT_MOTOR_BASEVALUE = 31;
 
 const int LEFT_MOTOR_OFFVALUE = 16;
 const int RIGHT_MOTOR_OFFVALUE = 15;
@@ -78,7 +78,7 @@ unsigned long timeOld = 0;
 double errorSum = 0;
 
 // PID Constants
-double kp = 0.6;
+double kp = 0.9;
 double kd = 0;
 double ki = 0;
 
@@ -129,21 +129,23 @@ void powerLED(LED led, int power) {
 void powerMotor(Direction dir, int amount) {
   int leftPower, rightPower;
   
-  switch (dir) {
+  switch (curState.dir) {
     case FORWARD:
       powerLED(GREEN, ON);
       rightPower = RIGHT_MOTOR_BASEVALUE;
       leftPower = LEFT_MOTOR_BASEVALUE;
       break;
     case LEFT:
+    Serial.println("In left motor");
       powerLED(RED, ON);
       rightPower = RIGHT_MOTOR_BASEVALUE + amount;
       leftPower = LEFT_MOTOR_BASEVALUE;
       break;
     case RIGHT:
+      Serial.println("In right motor");
       powerLED(BLUE, ON);
-      leftPower = LEFT_MOTOR_BASEVALUE + amount;
       rightPower = RIGHT_MOTOR_BASEVALUE;
+      leftPower = LEFT_MOTOR_BASEVALUE + amount;
       break;
     case STOP:
       powerLED(RED, ON);
@@ -157,6 +159,11 @@ void powerMotor(Direction dir, int amount) {
   // Limit motor powers to above the minimum speed they work at and below maximum wanted speed
   int leftPowerLimited = min( max(leftPower, LEFT_MOTOR_THRESHOLD), LEFT_MOTOR_MAX);
   int rightPowerLimited = min( max(rightPower, RIGHT_MOTOR_THRESHOLD), RIGHT_MOTOR_MAX);
+  Serial.print("Motor left value is ");
+  Serial.print(leftPowerLimited);
+  Serial.print(", and Motor right value is ");
+  Serial.print(rightPowerLimited);
+  Serial.print("\n");
   analogWrite(LEFT_MOTOR, map(leftPowerLimited, 0.0, 100.0, 0.0, 255.0));
   analogWrite(RIGHT_MOTOR, map(rightPowerLimited, 0.0, 100.0, 0.0, 255.0));
 }
@@ -440,12 +447,12 @@ void setup() {
     powerLED(RED, ON);
     analogWrite(LEFT_MOTOR, 0);
     analogWrite(RIGHT_MOTOR, 0);
-    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
-    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_BASEVALUE, 0.0, 100.0, 0.0, 255.0));
+    analogWrite(LEFT_MOTOR, map(50, 0.0, 100.0, 0.0, 255.0));
+    analogWrite(RIGHT_MOTOR, map(49, 0.0, 100.0, 0.0, 255.0));
     delay(50);
-    analogWrite(LEFT_MOTOR, map(LEFT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
-    analogWrite(RIGHT_MOTOR, map(RIGHT_MOTOR_THRESHOLD, 0.0, 100.0, 0.0, 255.0));
-    delay(50);
+//    analogWrite(LEFT_MOTOR, map(60, 0.0, 100.0, 0.0, 255.0));
+//    analogWrite(RIGHT_MOTOR, map(59, 0.0, 100.0, 0.0, 255.0));
+//    delay(50);
     powerLED(RED, OFF);
 }
 
