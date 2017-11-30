@@ -32,7 +32,7 @@ const int OFF = 0;
 // 31 to start, 15 at lowest
 
 const int LEFT_MOTOR_THRESHOLD = 34;
-const int RIGHT_MOTOR_THRESHOLD = 37;
+const int RIGHT_MOTOR_THRESHOLD = 40;
 
 const int LEFT_MOTOR_BASEVALUE = 39; //Originally 38 each
 const int RIGHT_MOTOR_BASEVALUE = 39;
@@ -132,6 +132,8 @@ void powerMotor(Direction dir, int amount) {
   switch (dir) {
     case FORWARD:
       powerLED(GREEN, ON);
+      rightPower = RIGHT_MOTOR_BASEVALUE;
+      leftPower = LEFT_MOTOR_BASEVALUE;
       break;
     case LEFT:
       powerLED(RED, ON);
