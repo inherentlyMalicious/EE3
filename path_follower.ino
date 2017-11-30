@@ -2,6 +2,8 @@
 #define IRSensor_Left   A3
 #define IRSensor_Right  A7
 
+const boolean debug = true;
+
 enum IRSENSOR {
   IR_FRONT,
   IR_LEFT,
@@ -31,17 +33,17 @@ const int OFF = 0;
 #define RIGHT_MOTOR     3
 // 31 to start, 15 at lowest
 
-const int LEFT_MOTOR_THRESHOLD = 20;//34;
-const int RIGHT_MOTOR_THRESHOLD = 19;//40;
+const int LEFT_MOTOR_THRESHOLD = 51;//34;
+const int RIGHT_MOTOR_THRESHOLD = 48;//40;
 
-const int LEFT_MOTOR_BASEVALUE = 32; //Originally 38 each
-const int RIGHT_MOTOR_BASEVALUE = 31;
+const int LEFT_MOTOR_BASEVALUE = 81;//32; //Originally 38 each
+const int RIGHT_MOTOR_BASEVALUE = 87;//34;
 
-const int LEFT_MOTOR_OFFVALUE = 16;
-const int RIGHT_MOTOR_OFFVALUE = 15;
+const int LEFT_MOTOR_OFFVALUE = 41;//16;
+const int RIGHT_MOTOR_OFFVALUE = 38;//15;
 
-const int LEFT_MOTOR_MAX = 100;
-const int RIGHT_MOTOR_MAX = 100;
+const int LEFT_MOTOR_MAX = 200;//100;
+const int RIGHT_MOTOR_MAX = 200;//100;
 
 enum Direction {
   NONE,
@@ -78,7 +80,7 @@ unsigned long timeOld = 0;
 double errorSum = 0;
 
 // PID Constants
-double kp = 0.9;
+double kp = 20;
 double kd = 0;
 double ki = 0;
 
@@ -123,49 +125,49 @@ void powerLED(LED led, int power) {
     default:
       break;
   }
+  delay(5);
 }
 
 // Helper to power motors
-void powerMotor(Direction dir, int amount) {
+void powerMotor(Zone zone, int amount) {
   int leftPower, rightPower;
   
-  switch (curState.dir) {
-    case FORWARD:
-      powerLED(GREEN, ON);
-      rightPower = RIGHT_MOTOR_BASEVALUE;
-      leftPower = LEFT_MOTOR_BASEVALUE;
-      break;
-    case LEFT:
-    Serial.println("In left motor");
-      powerLED(RED, ON);
-      rightPower = RIGHT_MOTOR_BASEVALUE + amount;
-      leftPower = LEFT_MOTOR_BASEVALUE;
-      break;
-    case RIGHT:
-      Serial.println("In right motor");
-      powerLED(BLUE, ON);
-      rightPower = RIGHT_MOTOR_BASEVALUE;
-      leftPower = LEFT_MOTOR_BASEVALUE + amount;
-      break;
-    case STOP:
-      powerLED(RED, ON);
-      powerLED(BLUE, ON);
-      analogWrite(LEFT_MOTOR, OFF);
-      analogWrite(RIGHT_MOTOR, OFF);
+  switch (zone) {
+    case ZONE_LEFT_FAR:
+    case ZONE_LEFT_CLOSE:
+    case ZONE_LEFT_GAP:
+          powerLED(RED, ON);
+    
+    break;
+    case ZONE_FRONT:
+          powerLED(GREEN, ON);
+    
+    break;
+    case ZONE_RIGHT_GAP:
+    case ZONE_RIGHT_CLOSE:
+    case ZONE_RIGHT_FAR:
+        powerLED(BLUE, ON);
+    break;
     default:
-      return;
+      powerLED(RED, OFF);
+      powerLED(BLUE, OFF);
+      powerLED(GREEN, OFF);
+    break;
   }
 
   // Limit motor powers to above the minimum speed they work at and below maximum wanted speed
   int leftPowerLimited = min( max(leftPower, LEFT_MOTOR_THRESHOLD), LEFT_MOTOR_MAX);
   int rightPowerLimited = min( max(rightPower, RIGHT_MOTOR_THRESHOLD), RIGHT_MOTOR_MAX);
+  if (debug) {
   Serial.print("Motor left value is ");
   Serial.print(leftPowerLimited);
   Serial.print(", and Motor right value is ");
   Serial.print(rightPowerLimited);
   Serial.print("\n");
-  analogWrite(LEFT_MOTOR, map(leftPowerLimited, 0.0, 100.0, 0.0, 255.0));
-  analogWrite(RIGHT_MOTOR, map(rightPowerLimited, 0.0, 100.0, 0.0, 255.0));
+  }
+  
+  analogWrite(LEFT_MOTOR, leftPowerLimited);//map(leftPowerLimited, 0.0, 100.0, 0.0, 255.0));
+  analogWrite(RIGHT_MOTOR, rightPowerLimited);//map(rightPowerLimited, 0.0, 100.0, 0.0, 255.0));
 }
 
 // Helper function to read sensor values
@@ -347,24 +349,20 @@ double getLocation() {
   // Get the distance from the location and the side its on
   switch (curState.zone) {
     case ZONE_LEFT_FAR:
-      return -8;
+      return 8;
       break;
     case ZONE_LEFT_CLOSE:
       if (curState.side == LEFT) {
-        return -4 - absDistanceLeft;
+        return 4 + absDistanceLeft;
       } else if (curState.side == RIGHT) {
-        return -4 + absDistanceLeft;
+        return 4 - absDistanceLeft;
       }
       break;
     case ZONE_LEFT_GAP:
-      return -2;
+      return 2;
       break;
     case ZONE_FRONT:
-      if (curState.side == LEFT) {
-        return 0 - absDistanceFront;
-      } else if (curState.side == RIGHT) {
-        return  + absDistanceFront;
-      } 
+      return 0 + absDistanceFront;
       break;
     case ZONE_RIGHT_GAP:
       return 2;
@@ -433,27 +431,28 @@ void setup() {
   curState.side = NONE;
   curState.dir = FORWARD;
 
+  if (debug) {
   Serial.begin(9600);
+  }
 
   powerLED(ALL, ON);
   delay(1500);
-  powerLED(GREEN, OFF);
+//  powerLED(GREEN, OFF);
   delay(1500);
-  powerLED(RED, OFF);
+  //powerLED(RED, OFF);
   delay(1500);
-  powerLED(BLUE, OFF);
-
+//  powerLED(BLUE, OFF);
+  
  // Kickstart
-    powerLED(RED, ON);
+    powerLED(GREEN, ON);
     analogWrite(LEFT_MOTOR, 0);
     analogWrite(RIGHT_MOTOR, 0);
     analogWrite(LEFT_MOTOR, map(50, 0.0, 100.0, 0.0, 255.0));
     analogWrite(RIGHT_MOTOR, map(49, 0.0, 100.0, 0.0, 255.0));
-    delay(50);
+    delay(20);
 //    analogWrite(LEFT_MOTOR, map(60, 0.0, 100.0, 0.0, 255.0));
 //    analogWrite(RIGHT_MOTOR, map(59, 0.0, 100.0, 0.0, 255.0));
 //    delay(50);
-    powerLED(RED, OFF);
 }
 
 void loop() {
@@ -461,9 +460,14 @@ void loop() {
     setDirection();
   } else {
     movementCalculation(&dir, &ammount);
-    powerMotor(dir, ammount);  
+    if (debug) {
+     Serial.print("Ammount: ");
+    Serial.println(ammount);
+   }
+    powerMotor(curState.zone, ammount);  
   }
 
+if (debug) {
   Serial.print("Zone: ");
   Zone currentzone = curState.zone;
   switch (currentzone) {
@@ -513,6 +517,9 @@ void loop() {
       default:
       break;
     }
-
-  powerLED(ALL, OFF);
+}
+  powerLED(BLUE, OFF);
+  powerLED(GREEN, OFF);
+  powerLED(RED, OFF);
+  
 }
