@@ -36,8 +36,10 @@ const int RIGHT_MOTOR_THRESHOLD = 48;
 
 const int LEFT_MOTOR_BASEVALUE = 55;
 const int LEFT_MOTOR_FRONT_BASEVALUE = 81;
+const int LEFT_MOTOR_FRONT_KICKSTART = 108;
 const int RIGHT_MOTOR_BASEVALUE = 62;
 const int RIGHT_MOTOR_FRONT_BASEVALUE = 87;
+const int RIGHT_MOTOR_FRONT_KICKSTART = 111;
 
 const int LEFT_MOTOR_OFFVALUE = 41;
 const int RIGHT_MOTOR_OFFVALUE = 38;
@@ -138,7 +140,7 @@ void powerMotor(Zone zone, int amount) {
     }
       powerLED(RED, ON);
       if (curState.dir == LEFT) {
-        leftPower = LEFT_MOTOR_BASEVALUE;
+        leftPower = 0;//LEFT_MOTOR_BASEVALUE;
         rightPower = RIGHT_MOTOR_BASEVALUE + amount; 
       } else if (curState.dir == RIGHT) {
         leftPower = LEFT_MOTOR_BASEVALUE + amount;
@@ -147,6 +149,7 @@ void powerMotor(Zone zone, int amount) {
     break;
     case ZONE_FRONT:
       powerLED(GREEN, ON);
+      kickstart();
       leftPower = LEFT_MOTOR_FRONT_BASEVALUE;
       rightPower = RIGHT_MOTOR_FRONT_BASEVALUE;
     break;
@@ -161,7 +164,7 @@ void powerMotor(Zone zone, int amount) {
         rightPower = RIGHT_MOTOR_BASEVALUE + amount; 
       } else if (curState.dir == RIGHT) {
         leftPower = LEFT_MOTOR_BASEVALUE + amount;
-        rightPower = RIGHT_MOTOR_BASEVALUE;         
+        rightPower = 0;//RIGHT_MOTOR_BASEVALUE;         
       }
     break;
     default:
@@ -392,6 +395,11 @@ void movementCalculation(Direction* dir, double* output) {
   timeOld = timeCur;
 }
 
+void kickstart() {
+    analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
+    analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
+}
+
 void setup() {
   pinMode(A0, INPUT);
   pinMode(A3, INPUT);
@@ -424,8 +432,8 @@ void setup() {
     powerLED(GREEN, ON);
     analogWrite(LEFT_MOTOR, 0);
     analogWrite(RIGHT_MOTOR, 0);
-    analogWrite(LEFT_MOTOR, map(50, 0.0, 100.0, 0.0, 255.0));
-    analogWrite(RIGHT_MOTOR, map(49, 0.0, 100.0, 0.0, 255.0));
+    analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
+    analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
     delay(20);
 }
 
