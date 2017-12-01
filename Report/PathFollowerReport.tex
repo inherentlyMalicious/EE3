@@ -1,0 +1,167 @@
+\documentclass[]{report}
+
+\usepackage{listings}
+\usepackage{color} %red, green, blue, yellow, cyan, magenta, black, white
+\definecolor{mygreen}{RGB}{0,0.6,0} % color values Red, Green, Blue
+\definecolor{mygray}{RGB}{0.47,0.47,0.33}
+\definecolor{myorange}{RGB}{0.8,0.4,0}
+\definecolor{mywhite}{RGB}{0.98,0.98,0.98}
+\definecolor{myblue}{RGB}{0.01,0.61,0.98}
+\usepackage{graphicx}
+\usepackage{etoolbox}
+\usepackage[normalem]{ulem}    
+
+%% https://tex.stackexchange.com/questions/211415/how-to-set-up-listings-for-use-code-from-arduino
+\newcommand*{\FormatDigit}[1]{\ttfamily\textcolor{mygreen}{#1}}
+%% https://tex.stackexchange.com/questions/32174/listings-package-how-can-i-format-all-numbers
+\lstdefinestyle{FormattedNumber}{%
+	literate=*{0}{{\FormatDigit{0}}}{1}%
+	{1}{{\FormatDigit{1}}}{1}%
+	{2}{{\FormatDigit{2}}}{1}%
+	{3}{{\FormatDigit{3}}}{1}%
+	{4}{{\FormatDigit{4}}}{1}%
+	{5}{{\FormatDigit{5}}}{1}%
+	{6}{{\FormatDigit{6}}}{1}%
+	{7}{{\FormatDigit{7}}}{1}%
+	{8}{{\FormatDigit{8}}}{1}%
+	{9}{{\FormatDigit{9}}}{1}%
+	{.0}{{\FormatDigit{.0}}}{2}% Following is to ensure that only periods
+	{.1}{{\FormatDigit{.1}}}{2}% followed by a digit are changed.
+	{.2}{{\FormatDigit{.2}}}{2}%
+	{.3}{{\FormatDigit{.3}}}{2}%
+	{.4}{{\FormatDigit{.4}}}{2}%
+	{.5}{{\FormatDigit{.5}}}{2}%
+	{.6}{{\FormatDigit{.6}}}{2}%
+	{.7}{{\FormatDigit{.7}}}{2}%
+	{.8}{{\FormatDigit{.8}}}{2}%
+	{.9}{{\FormatDigit{.9}}}{2}%
+	%{,}{{\FormatDigit{,}}{1}% depends if you want the "," in color
+	{\ }{{ }}{1}% handle the space
+	,%
+}
+
+
+\lstset{%
+	backgroundcolor=\color{mywhite},   
+	basicstyle=\footnotesize,       
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                   
+	commentstyle=\color{red},    
+	deletekeywords={...},           
+	escapeinside={\%*}{*)},          
+	extendedchars=true,              
+	frame=shadowbox,                    
+	keepspaces=true,                 
+	keywordstyle=\color{myorange},       
+	language=Octave,                
+	morekeywords={*,...},            
+	numbers=left,                    
+	numbersep=5pt,                   
+	numberstyle=\tiny\color{mygray}, 
+	rulecolor=\color{black},         
+	rulesepcolor=\color{myblue},
+	showspaces=false,                
+	showstringspaces=false,          
+	showtabs=false,                  
+	stepnumber=2,                    
+	stringstyle=\color{myorange},    
+	tabsize=2,                       
+	title=\lstname,
+	emphstyle=\bfseries\color{blue},%  style for emph={} 
+}    
+
+%% language specific settings:
+\lstdefinestyle{Arduino}{%
+	style=FormattedNumber,
+	keywords={void},%                 define keywords
+	morecomment=[l]{//},%             treat // as comments
+	morecomment=[s]{/*}{*/},%         define /* ... */ comments
+	emph={HIGH, OUTPUT, LOW},%        keywords to emphasize
+}
+
+\newtoggle{InString}{}% Keep track of if we are within a string
+\togglefalse{InString}% Assume not initally in string
+
+\newcommand{\classname}{EE3: Intro to Electrical Engineering}
+\newcommand{\project}{Path Following Robot}
+\newcommand{\authorname}{Brian Dionigi Raymond\\Kevin Ke-En Sun}
+\newcommand{\instructor}{Prof. Briggs}
+
+\newcommand{\sectionTitle}[1]{ {\large\textbf{\uline{#1}}} \\ \vspace{1.5em} }
+\newcommand{\subsectionTitle}[1]{ {\hspace{2em}\uline{#1}} \\ \vspace{1em} }
+
+\newcommand{\textIntro}{Introduction plaintext - To be added}
+\newcommand{\textTestDesign}{Testing Methodology Design plaintext - To be added}
+\newcommand{\textTestConduction}{Testing Methodology Conduction plaintext - To be added}
+\newcommand{\textTestAnalysis}{Testing Methodology Analysis plaintext - To be added}
+\newcommand{\textTestInterpretation}{Testing Methodology Interpretation plaintext - To be added}
+\newcommand{\textTestDiscussion}{Test Discussion plaintext - To be added}
+\newcommand{\textRaceResults}{Results Discussion Conduction plaintext - To be added}
+\newcommand{\textConclusions}{Conclusions plaintext - To be added}
+\newcommand{\textFutureWork}{Future Work plaintext - To be added}
+\newcommand{\textReferences}{References plaintext - To be added}
+
+\begin{document}
+		
+	\begin{center}
+		{\LARGE \textsc{\classname \\ \project} \\ \vspace{4pt}}
+		\rule[13pt]{\textwidth}{1pt} \\ %\vspace{150pt}
+		{\large \authorname \\ \vspace{10pt}
+			Instructor: \instructor \\ \vspace{10pt}
+			\today \\ \vspace{10pt}
+		}
+	\end{center}	
+	
+	\begin{flushleft}
+		\sectionTitle{Introduction}
+		
+		\textIntro \\ \vspace{1em}
+		
+		\sectionTitle{Testing Methology}
+		
+		\subsectionTitle{How We Designed the Test}
+
+		\textTestDesign \\ \vspace{1em}
+		
+		\subsectionTitle{How We Conducted the Test}
+
+		\textTestConduction \\ \vspace{1em}
+		
+		\subsectionTitle{How We Analyzed the Test Data}
+
+		\textTestAnalysis \\ \vspace{1em}
+		
+		\subsectionTitle{How We Interpreted the Data}
+
+		\textTestInterpretation \\ \vspace{1em}
+		
+		\sectionTitle{Results and Discussion}
+			
+			\subsectionTitle{Test Discussion}
+
+			\textTestDiscussion \\ \vspace{1em}
+			
+			\subsectionTitle{Race Day Results}
+
+			\textRaceResults \\ \vspace{1em}
+			
+		\sectionTitle{Conclusions and Future Work}
+			
+		\textConclusions \\ \vspace{1em}
+		\textFutureWork \\ \vspace{1em}
+			
+		\sectionTitle{References}
+			
+		\textReferences \\ \vspace{1em}
+			
+	\end{flushleft}
+	
+%\begin{figure}[h]
+%	\centering
+%	\textbf{Title}\par\medskip
+%	\makebox[0pt]{\includegraphics[width=1.5\textwidth,height=2\textheight,keepaspectratio]{image.jpg}}
+%	\caption{Caption}
+%\end{figure}
+
+\end{document}          

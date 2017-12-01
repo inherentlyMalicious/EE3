@@ -1,0 +1,68 @@
+EE3 FINAL REPORT TEMPLATE AND INSTRUCTIONS
+
+{Text in braces are meant to be replaced by your text}
+
+[Text in brackets are your instructions, and do not appear in the report.]
+
+(Text fragments in parenthesis denote section headings and are included in the Final Report.)
+ 
+{YOUR REPORT TITLE HERE
+
+Name 1
+Name 2
+Name 3}
+
+(Introduction)
+[In one to two paragraphs, briefly describe the project goals, and the design that was selected. Then describe the basic theory required for understanding each of the components that you used (e.g., prose description of operation, curves, and any equations needed for interpreting responses).]
+{Your introduction here}
+
+(Testing Methodology)
+
+[You tested several subsystems in this project. They are listed below. Pick one. Describe the procedures you followed to verify the operation of that subsystem.
+Path Sensing Subsystem
+Motor Control Subsystem
+Stop Signal Sensing
+Wheel Speed Sensing Subsystem (if applicable)
+The entire vehicle
+How We Designed the Test]
+
+{Your description of how you designed the test here}
+
+(How We Conducted the Test)
+
+{Your description of how you conducted the test here}
+
+(How We Analyzed the Test Data)
+
+{Your description of how you analyzed the test data here}
+
+(How We interpreted the Data)
+
+{Your description of how you interpreted the data here}
+ 
+(Results and Discussion)
+
+[Results apply to two things: [1] the test that you described in Testing Methodology, and [2] the Race Day results. For the test, provide graphs and tables of your testing results, as applicable, with discussion of their interpretation. This discussion should be quantitative (meaning that the numbers obtained in your test results should be discussed. For Race Day, discussion of the results will be much more qualitative, with far fewer numbers. Description of some of the blind alleys you went down may be helpful to future students. Photos of your project are fine.]
+
+(Test Discussion)
+
+{Your discussion of the test here}
+
+(Race Day Results)
+
+{Your discussion of Race Day results here}
+
+(Conclusions and Future Work)
+
+[Provide a brief discussion of how well the project met your objectives. Briefly describe what you learned in doing your project. Describe some extensions you would like to do if you had more time, and how you would go about testing them.]
+
+{Your conclusions and future work here}
+
+(Illustration Credits (not a separate section))
+[This is NOT a separate section of the report. Nor are credits a part of the References section. Illustrations are credited underneath the illustration. ALL illustrations must be credited, unless you have developed them yourselves. Illustrations from Wikipedia should be credited to the illustration author.]
+
+(References)
+
+[If you used software from the web, or consulted some books or articles (or online designs), then you must, in the main report, note that usage through a reference number inside square brackets (e.g., [1]) and include the corresponding reference in this section. If you are using one of the circuits supplied for the class (e.g., the motor drive circuit), you should note that in your report along with the diagram, but you don’t need to cite a reference.]
+
+{Your references here}
