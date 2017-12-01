@@ -34,8 +34,10 @@ const int OFF = 0;
 const int LEFT_MOTOR_THRESHOLD = 51;
 const int RIGHT_MOTOR_THRESHOLD = 48;
 
-const int LEFT_MOTOR_BASEVALUE = 81;
-const int RIGHT_MOTOR_BASEVALUE = 87;
+const int LEFT_MOTOR_BASEVALUE = 55;
+const int LEFT_MOTOR_FRONT_BASEVALUE = 81;
+const int RIGHT_MOTOR_BASEVALUE = 62;
+const int RIGHT_MOTOR_FRONT_BASEVALUE = 87;
 
 const int LEFT_MOTOR_OFFVALUE = 41;
 const int RIGHT_MOTOR_OFFVALUE = 38;
@@ -76,7 +78,7 @@ unsigned long timeOld = 0;
 double errorSum = 0;
 
 // PID Constants
-double kp = 20;
+double kp = 30;
 double kd = 0;
 double ki = 0;
 
@@ -129,7 +131,6 @@ void powerMotor(Zone zone, int amount) {
   int leftPower, rightPower;
   
   switch (zone) {
-    case ZONE_LEFT_FAR:
     case ZONE_LEFT_CLOSE:
     case ZONE_LEFT_GAP:
     if (debug) {
@@ -146,12 +147,11 @@ void powerMotor(Zone zone, int amount) {
     break;
     case ZONE_FRONT:
       powerLED(GREEN, ON);
-      leftPower = LEFT_MOTOR_BASEVALUE;
-      rightPower = RIGHT_MOTOR_BASEVALUE;
+      leftPower = LEFT_MOTOR_FRONT_BASEVALUE;
+      rightPower = RIGHT_MOTOR_FRONT_BASEVALUE;
     break;
     case ZONE_RIGHT_GAP:
     case ZONE_RIGHT_CLOSE:
-    case ZONE_RIGHT_FAR:
       if (debug) {
         Serial.print("Right side\n"); 
       }
@@ -331,9 +331,6 @@ double getLocation() {
 
   // Get the distance from the location and the side its on
   switch (curState.zone) {
-    case ZONE_LEFT_FAR:
-      return 8;
-      break;
     case ZONE_LEFT_CLOSE:
       if (curState.side == LEFT) {
         return 4 + absDistanceLeft;
@@ -356,9 +353,6 @@ double getLocation() {
       } else if (curState.side == RIGHT) {
         return 4 + absDistanceRight;
       }
-      break;
-    case ZONE_RIGHT_FAR:
-      return 8;
       break;
   } 
 }
@@ -455,9 +449,6 @@ if (debug) {
   Serial.print("Zone: ");
   Zone currentzone = curState.zone;
   switch (currentzone) {
-    case ZONE_LEFT_FAR:
-      Serial.println("ZONE LEFT FAR");
-      break;
     case ZONE_LEFT_CLOSE:
       Serial.println("ZONE LEFT CLOSE");
       break;
@@ -472,9 +463,6 @@ if (debug) {
       break;
     case ZONE_RIGHT_CLOSE:
       Serial.println("ZONE RIGHT CLOSE");
-      break;
-    case ZONE_RIGHT_FAR:
-      Serial.println("ZONE RIGHT FAR");
       break;
     }
     Serial.print("Currently on: ");
