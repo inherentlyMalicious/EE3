@@ -2,7 +2,7 @@
 #define IRSensor_Left   A3
 #define IRSensor_Right  A7
 
-const boolean debug = true;
+const boolean debug = false;
 
 enum IRSENSOR {
   IR_FRONT,
@@ -29,21 +29,19 @@ const int OFF = 0;
 //const int IR_RIGHT_GOAL = 475;
 
 #define LEFT_MOTOR      11
-// 31 to start, 12 at lowest
 #define RIGHT_MOTOR     3
-// 31 to start, 15 at lowest
 
-const int LEFT_MOTOR_THRESHOLD = 51;//34;
-const int RIGHT_MOTOR_THRESHOLD = 48;//40;
+const int LEFT_MOTOR_THRESHOLD = 51;
+const int RIGHT_MOTOR_THRESHOLD = 48;
 
-const int LEFT_MOTOR_BASEVALUE = 81;//32; //Originally 38 each
-const int RIGHT_MOTOR_BASEVALUE = 87;//34;
+const int LEFT_MOTOR_BASEVALUE = 81;
+const int RIGHT_MOTOR_BASEVALUE = 87;
 
-const int LEFT_MOTOR_OFFVALUE = 41;//16;
-const int RIGHT_MOTOR_OFFVALUE = 38;//15;
+const int LEFT_MOTOR_OFFVALUE = 41;
+const int RIGHT_MOTOR_OFFVALUE = 38;
 
-const int LEFT_MOTOR_MAX = 200;//100;
-const int RIGHT_MOTOR_MAX = 200;//100;
+const int LEFT_MOTOR_MAX = 200;
+const int RIGHT_MOTOR_MAX = 200;
 
 enum Direction {
   NONE,
@@ -55,13 +53,11 @@ enum Direction {
 
 // Zones describing where the black line is in relation to the sensors
 enum Zone {
-  ZONE_LEFT_FAR,
   ZONE_LEFT_CLOSE,
   ZONE_LEFT_GAP,
   ZONE_FRONT,
   ZONE_RIGHT_GAP,
-  ZONE_RIGHT_CLOSE,
-  ZONE_RIGHT_FAR
+  ZONE_RIGHT_CLOSE
 };
  
 struct state {
@@ -136,17 +132,37 @@ void powerMotor(Zone zone, int amount) {
     case ZONE_LEFT_FAR:
     case ZONE_LEFT_CLOSE:
     case ZONE_LEFT_GAP:
-          powerLED(RED, ON);
-    
+    if (debug) {
+      Serial.print("Left side\n");
+    }
+      powerLED(RED, ON);
+      if (curState.dir == LEFT) {
+        leftPower = LEFT_MOTOR_BASEVALUE;
+        rightPower = RIGHT_MOTOR_BASEVALUE + amount; 
+      } else if (curState.dir == RIGHT) {
+        leftPower = LEFT_MOTOR_BASEVALUE + amount;
+        rightPower = RIGHT_MOTOR_BASEVALUE;         
+      }
     break;
     case ZONE_FRONT:
-          powerLED(GREEN, ON);
-    
+      powerLED(GREEN, ON);
+      leftPower = LEFT_MOTOR_BASEVALUE;
+      rightPower = RIGHT_MOTOR_BASEVALUE;
     break;
     case ZONE_RIGHT_GAP:
     case ZONE_RIGHT_CLOSE:
     case ZONE_RIGHT_FAR:
-        powerLED(BLUE, ON);
+      if (debug) {
+        Serial.print("Right side\n"); 
+      }
+      powerLED(BLUE, ON);
+      if (curState.dir == LEFT) {
+        leftPower = LEFT_MOTOR_BASEVALUE;
+        rightPower = RIGHT_MOTOR_BASEVALUE + amount; 
+      } else if (curState.dir == RIGHT) {
+        leftPower = LEFT_MOTOR_BASEVALUE + amount;
+        rightPower = RIGHT_MOTOR_BASEVALUE;         
+      }
     break;
     default:
       powerLED(RED, OFF);
@@ -166,8 +182,8 @@ void powerMotor(Zone zone, int amount) {
   Serial.print("\n");
   }
   
-  analogWrite(LEFT_MOTOR, leftPowerLimited);//map(leftPowerLimited, 0.0, 100.0, 0.0, 255.0));
-  analogWrite(RIGHT_MOTOR, rightPowerLimited);//map(rightPowerLimited, 0.0, 100.0, 0.0, 255.0));
+  analogWrite(LEFT_MOTOR, leftPowerLimited);
+  analogWrite(RIGHT_MOTOR, rightPowerLimited);
 }
 
 // Helper function to read sensor values
@@ -186,6 +202,7 @@ int readSensor(IRSENSOR sensor) {
 
 // Function to set the starting location/direction of robot
 void setDirection() {
+  powerMotor(ZONE_FRONT, 0);
   int valLeft = readSensor(IR_LEFT);
   int valRight = readSensor(IR_RIGHT);
   if (valLeft <= 980) { // Line is by the right sensor, robot drifting left
@@ -220,13 +237,15 @@ double getLocation() {
   float absDistanceRight = pow(abs(((valRight - 596.321) / 401) - 0.041), 0.5);
   
   switch (curState.zone) {
-    case ZONE_LEFT_FAR:
-      // Line going from outside the scope of the left sensor to its left side
-      if (curState.dir == LEFT && valLeft <= valLeftMax) {
-        curState.zone = ZONE_LEFT_CLOSE;
-        curState.side = LEFT;
-      }
-      break;
+    if (debug) {
+      Serial.print("Left Sensor: ");
+      Serial.print(valLeft);
+      Serial.print("\nFront Sensor: ");
+      Serial.print(valFront);
+      Serial.print("\nRight Sensor: ");
+      Serial.print(valRight);
+      Serial.print("\n");
+    }
       case ZONE_LEFT_CLOSE:
       switch (curState.dir) {
         case LEFT: // Turning left
@@ -238,17 +257,8 @@ double getLocation() {
             curState.zone = ZONE_LEFT_GAP;
           }
         break;
-        case RIGHT: // Turning right
-          if (curState.side == RIGHT && valLeft <= valLeftTarget) {
-            // Line going from right side of the left sensor to the left side
-            curState.side = LEFT;
-          } else if (curState.side == LEFT && valLeft >= valLeftMax) {
-            // Line going from left side of the left sensor to outside the scope
-            curState.zone = ZONE_LEFT_FAR;
-          }
+      default:
         break;
-        default:
-          break;
       }
       break;
     case ZONE_LEFT_GAP:
@@ -258,6 +268,7 @@ double getLocation() {
             // Line going from between the left and front sensors to the left sensor
             curState.zone = ZONE_LEFT_CLOSE;
             curState.side = RIGHT;
+            curState.dir = LEFT;
           }
         case LEFT: // Turning left
           if (valFront <= valFrontMax) {
@@ -271,27 +282,14 @@ double getLocation() {
       }
       break;
     case ZONE_FRONT:
-      switch (curState.dir) {
-        case RIGHT: // Turning right
-          if (curState.side == RIGHT && valFront <= valFrontTarget) {
-            // Line going from right side of the front sensor to the left side
-            curState.side = LEFT;
-          } else if (curState.side == LEFT && valFront >= valFrontMax) {
-            // Line going from left side of the front sensor to between the left and front sensors
-            curState.zone = ZONE_LEFT_GAP;
-          }
-        break;
-        case LEFT: // Turning left
-          if (curState.side == LEFT && valFront <= valFrontTarget) {
-            // Line going from left side of the front sensor to the right side
-            curState.side = RIGHT;
-          } else if (curState.side == RIGHT && valFront >= valFrontMax) {
-            // Line going from right side of the front sensor to between the left and front sensors
-            curState.zone = ZONE_RIGHT_GAP;
-          }
-        break;
-        default:
-        break;
+      if (valLeft <= 980) { // Line is by the right sensor, robot drifting left
+        curState.zone = ZONE_LEFT_CLOSE;
+        curState.dir = LEFT;
+        curState.side = RIGHT;
+      } else if (valRight <= 980) { // Line is by the left sensor, robot drifting right
+        curState.zone = ZONE_RIGHT_CLOSE;
+        curState.dir = RIGHT;
+        curState.side = LEFT;
       }
       break;
     case ZONE_RIGHT_GAP:
@@ -301,6 +299,7 @@ double getLocation() {
             // Line going from between the right and front sensors to the right sensor
             curState.zone = ZONE_RIGHT_CLOSE;
             curState.side = LEFT;
+            curState.dir = RIGHT;
           }
         case RIGHT: // Turning right
           if (valFront <= valFrontMax) {
@@ -315,15 +314,6 @@ double getLocation() {
       break;
     case ZONE_RIGHT_CLOSE:
       switch (curState.dir) {
-        case LEFT: // Turning left
-          if (curState.side == LEFT && valRight <= valRightTarget) {
-            // Line going from the left side of right sensor to the right side
-            curState.side = RIGHT;
-          } else if (curState.side == RIGHT && valRight >= valRightMax) {
-            // Line going from the right side of right sensor to outside the scope
-            curState.zone = ZONE_RIGHT_FAR;
-          }
-        break;
         case RIGHT: // Turning right
           if (curState.side == RIGHT && valRight <= valRightTarget) {
             // Line going from the right side of right sensor to the left side
@@ -335,13 +325,6 @@ double getLocation() {
         break;
         default:
           break;
-      }
-      break;
-    case ZONE_RIGHT_FAR:
-      if (curState.dir == RIGHT && valRight <= valRightMax) {
-        // Line going from outside the scope of the right sensor to its right side
-        curState.zone = ZONE_RIGHT_CLOSE;
-        curState.side = RIGHT;
       }
       break;
   }
@@ -437,11 +420,11 @@ void setup() {
 
   powerLED(ALL, ON);
   delay(1500);
-//  powerLED(GREEN, OFF);
+  powerLED(GREEN, OFF);
   delay(1500);
-  //powerLED(RED, OFF);
+  powerLED(RED, OFF);
   delay(1500);
-//  powerLED(BLUE, OFF);
+  powerLED(BLUE, OFF);
   
  // Kickstart
     powerLED(GREEN, ON);
@@ -450,9 +433,6 @@ void setup() {
     analogWrite(LEFT_MOTOR, map(50, 0.0, 100.0, 0.0, 255.0));
     analogWrite(RIGHT_MOTOR, map(49, 0.0, 100.0, 0.0, 255.0));
     delay(20);
-//    analogWrite(LEFT_MOTOR, map(60, 0.0, 100.0, 0.0, 255.0));
-//    analogWrite(RIGHT_MOTOR, map(59, 0.0, 100.0, 0.0, 255.0));
-//    delay(50);
 }
 
 void loop() {
@@ -460,12 +440,16 @@ void loop() {
     setDirection();
   } else {
     movementCalculation(&dir, &ammount);
-    if (debug) {
-     Serial.print("Ammount: ");
-    Serial.println(ammount);
-   }
     powerMotor(curState.zone, ammount);  
+    if (debug) {
+      Serial.print("Ammount: ");
+      Serial.println(ammount);
+    }
   }
+
+  powerLED(BLUE, OFF);
+  powerLED(GREEN, OFF);
+  powerLED(RED, OFF);
 
 if (debug) {
   Serial.print("Zone: ");
@@ -517,9 +501,5 @@ if (debug) {
       default:
       break;
     }
-}
-  powerLED(BLUE, OFF);
-  powerLED(GREEN, OFF);
-  powerLED(RED, OFF);
-  
+}  
 }
