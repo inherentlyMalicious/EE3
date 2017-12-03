@@ -14,7 +14,8 @@ enum Zone {
   ZONE_LEFT_GAP,
   ZONE_FRONT,
   ZONE_RIGHT_GAP,
-  ZONE_RIGHT_CLOSE
+  ZONE_RIGHT_CLOSE,
+  ZONE_END
 };
 
 // END *************************************/
@@ -26,11 +27,16 @@ struct state {
   Zone zone;
   Direction side;
   Direction dir;
+  boolean complete;
 };
 
 typedef struct state State;
 
 State curState;
+
+unsigned long lastLeftRead = millis();
+unsigned long lastRightRead = 0;
+unsigned long stopDeltaT = 200; // milliseconds
 
 // END **************************************/
 
@@ -214,6 +220,13 @@ void powerMotor(Zone zone, int amount) {
         leftPower = LEFT_MOTOR_BASEVALUE + amount;
         rightPower = 0;//RIGHT_MOTOR_BASEVALUE;
       }
+      break;
+    case ZONE_END:
+      powerLED(RED, ON);
+      powerLED(BLUE, ON);
+      analogWrite(LEFT_MOTOR, OFF);
+      analogWrite(RIGHT_MOTOR, OFF);
+      return;
       break;
     default:
       powerLED(RED, OFF);
@@ -502,6 +515,7 @@ void setup() {
   curState.zone = ZONE_FRONT;
   curState.side = NONE;
   curState.dir = FORWARD;
+  curState.complete = false;
 
   if (debug) {
     Serial.begin(9600);
@@ -525,60 +539,73 @@ void setup() {
 }
 
 void loop() {
-  if (curState.side == NONE) {
-    setDirection();
-  } else {
-    movementCalculation(&dir, &amount);
-    powerMotor(curState.zone, amount);
+  if (readSensor(IR_LEFT) < 980) {
+    lastLeftRead = millis();
+  }
+  if (readSensor(IR_RIGHT) < 980) {
+    lastRightRead = millis();
   }
 
-  powerLED(BLUE, OFF);
-  powerLED(GREEN, OFF);
-  powerLED(RED, OFF);
-
-  if (debug && debugZone) {
-    Serial.print("Zone: ");
-    Zone currentzone = curState.zone;
-    switch (currentzone) {
-      case ZONE_LEFT_CLOSE:
-        Serial.println("ZONE LEFT CLOSE");
-        break;
-      case ZONE_LEFT_GAP:
-        Serial.println("ZONE LEFT GAP");
-        break;
-      case ZONE_FRONT:
-        Serial.println("ZONE FRONT");
-        break;
-      case ZONE_RIGHT_GAP:
-        Serial.println("ZONE RIGHT GAP");
-        break;
-      case ZONE_RIGHT_CLOSE:
-        Serial.println("ZONE RIGHT CLOSE");
-        break;
+  if (abs(lastRightRead - lastLeftRead) <= stopDeltaT) {
+    curState.complete = true;
+    powerLED(ALL, OFF);
+    powerMotor(ZONE_END, 0);
+  }
+  
+  if (!curState.complete) {
+    if (curState.side == NONE) {
+      setDirection();
+    } else {
+      movementCalculation(&dir, &amount);
+      powerMotor(curState.zone, amount);
     }
-    Serial.print("Currently on: ");
-    Direction currentside = curState.side;
-    switch (currentside) {
-      case LEFT:
-        Serial.println("LEFT");
-        break;
-      case RIGHT:
-        Serial.println("RIGHT");
-        break;
-      default:
-        break;
-    }
-    Serial.print("Currently moving: ");
-    Direction currentdir = curState.dir;
-    switch (currentdir) {
-      case LEFT:
-        Serial.println("LEFT");
-        break;
-      case RIGHT:
-        Serial.println("RIGHT");
-        break;
-      default:
-        break;
+  
+    powerLED(ALL, OFF);
+    
+    if (debug && debugZone) {
+      Serial.print("Zone: ");
+      Zone currentzone = curState.zone;
+      switch (currentzone) {
+        case ZONE_LEFT_CLOSE:
+          Serial.println("ZONE LEFT CLOSE");
+          break;
+        case ZONE_LEFT_GAP:
+          Serial.println("ZONE LEFT GAP");
+          break;
+        case ZONE_FRONT:
+          Serial.println("ZONE FRONT");
+          break;
+        case ZONE_RIGHT_GAP:
+          Serial.println("ZONE RIGHT GAP");
+          break;
+        case ZONE_RIGHT_CLOSE:
+          Serial.println("ZONE RIGHT CLOSE");
+          break;
+      }
+      Serial.print("Currently on: ");
+      Direction currentside = curState.side;
+      switch (currentside) {
+        case LEFT:
+          Serial.println("LEFT");
+          break;
+        case RIGHT:
+          Serial.println("RIGHT");
+          break;
+        default:
+          break;
+      }
+      Serial.print("Currently moving: ");
+      Direction currentdir = curState.dir;
+      switch (currentdir) {
+        case LEFT:
+          Serial.println("LEFT");
+          break;
+        case RIGHT:
+          Serial.println("RIGHT");
+          break;
+        default:
+          break;
+      }
     }
   }
 }
