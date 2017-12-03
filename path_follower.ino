@@ -1,51 +1,4 @@
-#define IRSensor_Front  A0
-#define IRSensor_Left   A3
-#define IRSensor_Right  A7
-
-const boolean debug = false;
-
-enum IRSENSOR {
-  IR_FRONT,
-  IR_LEFT,
-  IR_RIGHT
-};
-
-#define LED_R 6
-#define LED_G 5
-#define LED_B 7
-
-enum LED {
-  RED,
-  GREEN,
-  BLUE,
-  ALL
-};
-
-const int ON = 1;
-const int OFF = 0;
-
-//const int IR_LEFT_GOAL = 775;
-//const int IR_FRONT_GOAL = 575;
-//const int IR_RIGHT_GOAL = 475;
-
-#define LEFT_MOTOR      11
-#define RIGHT_MOTOR     3
-
-const int LEFT_MOTOR_THRESHOLD = 51;
-const int RIGHT_MOTOR_THRESHOLD = 48;
-
-const int LEFT_MOTOR_BASEVALUE = 55;
-const int LEFT_MOTOR_FRONT_BASEVALUE = 81;
-const int LEFT_MOTOR_FRONT_KICKSTART = 108;
-const int RIGHT_MOTOR_BASEVALUE = 62;
-const int RIGHT_MOTOR_FRONT_BASEVALUE = 87;
-const int RIGHT_MOTOR_FRONT_KICKSTART = 111;
-
-const int LEFT_MOTOR_OFFVALUE = 41;
-const int RIGHT_MOTOR_OFFVALUE = 38;
-
-const int LEFT_MOTOR_MAX = 200;
-const int RIGHT_MOTOR_MAX = 200;
+// Zones ***********************************/
 
 enum Direction {
   NONE,
@@ -63,7 +16,11 @@ enum Zone {
   ZONE_RIGHT_GAP,
   ZONE_RIGHT_CLOSE
 };
- 
+
+// END *************************************/
+
+// State ************************************/
+
 struct state {
   float distance;
   Zone zone;
@@ -75,38 +32,114 @@ typedef struct state State;
 
 State curState;
 
+// END **************************************/
+
+// Sensors *********************************/
+
+enum IRSENSOR {
+  IR_FRONT,
+  IR_LEFT,
+  IR_RIGHT
+};
+
+#define IRSensor_Front  A0
+#define IRSensor_Left   A3
+#define IRSensor_Right  A7
+
+// END *************************************/
+
+// LEDs ************************************/
+
+#define LED_R 6
+#define LED_G 5
+#define LED_B 7
+
+enum LED {
+  RED,
+  GREEN,
+  BLUE,
+  ALL
+};
+
+const int ON = 1;
+const int OFF = 0;
+
+// END *************************************/
+
+// Motor ***********************************/
+
+#define LEFT_MOTOR      11
+#define RIGHT_MOTOR     3
+
+const float LEFT_RIGHT_MOTOR_RATIO = 1.2;
+
+const int LEFT_MOTOR_OFFVALUE = 41;
+const int LEFT_MOTOR_THRESHOLD = 51;
+const int LEFT_MOTOR_BASEVALUE = 55;
+const int LEFT_MOTOR_FRONT_BASEVALUE = 81;
+const int LEFT_MOTOR_FRONT_KICKSTART = 108;
+const int LEFT_MOTOR_MAX = 200;
+
+const int RIGHT_MOTOR_OFFVALUE = 38;
+const int RIGHT_MOTOR_THRESHOLD = 48;
+const int RIGHT_MOTOR_BASEVALUE = 62;
+const int RIGHT_MOTOR_FRONT_BASEVALUE = 87;
+const int RIGHT_MOTOR_FRONT_KICKSTART = 111;
+const int RIGHT_MOTOR_MAX = 200;
+
+// END **************************************/
+
+// PID **************************************/
+
+Direction dir = NONE;
+double amount = 0;
+
 double locationOld = 0;
 unsigned long timeOld = 0;
 double errorSum = 0;
 
-// PID Constants
 double kp = 30;
-double kd = 0;
+double kd = -1;
 double ki = 0;
 
-Direction dir = NONE;
-double ammount = 0;
+// END *************************************/
+
+// Debugging *******************************/
+
+const boolean debug = false;
+const boolean debugMotor = false;
+const boolean debugSensor = false;
+const boolean debugPID = false;
+const boolean debugZone = false;
+
+// END *************************************/
+
+// Scale x which ranges from in_min to in_max to 0.0 to 1.0
+float absScale(float x, float in_min, float in_max)
+{
+  return abs((x - in_min) / (in_max - in_min));
+}
 
 // Helper to turn on/off LEDs
 void powerLED(LED led, int power) {
   switch (led) {
     case RED:
       if (power) {
-        digitalWrite(LED_R, HIGH);        
+        digitalWrite(LED_R, HIGH);
       } else {
         digitalWrite(LED_R, LOW);
       }
       break;
     case GREEN:
       if (power) {
-        digitalWrite(LED_G, HIGH);        
+        digitalWrite(LED_G, HIGH);
       } else {
         digitalWrite(LED_G, LOW);
       }
       break;
     case BLUE:
       if (power) {
-        digitalWrite(LED_B, HIGH);        
+        digitalWrite(LED_B, HIGH);
       } else {
         digitalWrite(LED_B, LOW);
       }
@@ -125,66 +158,86 @@ void powerLED(LED led, int power) {
     default:
       break;
   }
-  delay(5);
 }
 
 // Helper to power motors
 void powerMotor(Zone zone, int amount) {
   int leftPower, rightPower;
-  
+
   switch (zone) {
     case ZONE_LEFT_CLOSE:
     case ZONE_LEFT_GAP:
-    if (debug) {
-      Serial.print("Left side\n");
-    }
       powerLED(RED, ON);
-      if (curState.dir == LEFT) {
-        leftPower = 0;//LEFT_MOTOR_BASEVALUE;
-        rightPower = RIGHT_MOTOR_BASEVALUE + amount; 
-      } else if (curState.dir == RIGHT) {
-        leftPower = LEFT_MOTOR_BASEVALUE + amount;
-        rightPower = RIGHT_MOTOR_BASEVALUE;         
+      if (debug && debugMotor) {
+        Serial.print("Left side\n");
       }
-    break;
+      if (curState.dir == LEFT) {
+        if (debug && debugMotor) {
+          Serial.print("Left turn\n");
+        }
+        leftPower = 0;//LEFT_MOTOR_BASEVALUE;
+        rightPower = RIGHT_MOTOR_BASEVALUE + int(amount * LEFT_RIGHT_MOTOR_RATIO);
+      } else if (curState.dir == RIGHT) {
+        if (debug && debugMotor) {
+          Serial.print("Right turn\n");
+        }
+        leftPower = LEFT_MOTOR_BASEVALUE + amount;
+        rightPower = 0;
+      }
+      break;
     case ZONE_FRONT:
       powerLED(GREEN, ON);
+      if (debug && debugMotor) {
+        Serial.print("No turn (forward)\n");
+      }
+
       kickstart();
       leftPower = LEFT_MOTOR_FRONT_BASEVALUE;
       rightPower = RIGHT_MOTOR_FRONT_BASEVALUE;
-    break;
+      break;
     case ZONE_RIGHT_GAP:
     case ZONE_RIGHT_CLOSE:
-      if (debug) {
-        Serial.print("Right side\n"); 
+      if (debug & debugMotor) {
+        Serial.print("Right side\n");
       }
       powerLED(BLUE, ON);
       if (curState.dir == LEFT) {
-        leftPower = LEFT_MOTOR_BASEVALUE;
-        rightPower = RIGHT_MOTOR_BASEVALUE + amount; 
+        if (debug & debugMotor) {
+          Serial.print("Left turn\n");
+        }
+        leftPower = 0;
+        rightPower = RIGHT_MOTOR_BASEVALUE + int(amount * LEFT_RIGHT_MOTOR_RATIO);
       } else if (curState.dir == RIGHT) {
+        if (debug & debugMotor) {
+          Serial.print("Right turn\n");
+        }
         leftPower = LEFT_MOTOR_BASEVALUE + amount;
-        rightPower = 0;//RIGHT_MOTOR_BASEVALUE;         
+        rightPower = 0;//RIGHT_MOTOR_BASEVALUE;
       }
-    break;
+      break;
     default:
       powerLED(RED, OFF);
       powerLED(BLUE, OFF);
       powerLED(GREEN, OFF);
-    break;
+      break;
   }
 
   // Limit motor powers to above the minimum speed they work at and below maximum wanted speed
   int leftPowerLimited = min( max(leftPower, LEFT_MOTOR_THRESHOLD), LEFT_MOTOR_MAX);
   int rightPowerLimited = min( max(rightPower, RIGHT_MOTOR_THRESHOLD), RIGHT_MOTOR_MAX);
-  if (debug) {
-  Serial.print("Motor left value is ");
-  Serial.print(leftPowerLimited);
-  Serial.print(", and Motor right value is ");
-  Serial.print(rightPowerLimited);
-  Serial.print("\n");
+  if (debug && debugMotor) {
+
+    Serial.print("Ammount to increase by: ");
+    Serial.print(amount);
+    Serial.print("\n");
+    Serial.print("Motor left value is ");
+    Serial.print(leftPowerLimited);
+    Serial.print(", and Motor right value is ");
+    Serial.print(rightPowerLimited);
+    Serial.print("\n");
+
   }
-  
+
   analogWrite(LEFT_MOTOR, leftPowerLimited);
   analogWrite(RIGHT_MOTOR, rightPowerLimited);
 }
@@ -199,7 +252,7 @@ int readSensor(IRSENSOR sensor) {
     case IR_RIGHT:
       return analogRead(IRSensor_Right);
     default:
-      return 0;  
+      return 0;
   }
 }
 
@@ -224,72 +277,79 @@ void setDirection() {
 // Get current location of line based off sensor readings
 double getLocation() {
   // Threshold values to be used
-  const int valLeftTarget = 700;
+  const int valLeftTarget = 650;
   const int valLeftMax = 980;
-  const int valFrontTarget = 700;
+  const int valFrontTarget = 550;
   const int valFrontMax = 980;
-  const int valRightTarget = 600;
+  const int valRightTarget = 400;
   const int valRightMax = 980;
+  const float distanceTarget = 0.33;
+  const float distanceMax = 0.97;
 
   // absDistance values based off exponential line of best fit
-  int valLeft = readSensor(IR_LEFT);
-  float absDistanceLeft = pow(abs(((valLeft - 761.959) / 235) + 0.093), 0.5);
-  int valFront = readSensor(IR_FRONT);
-  float absDistanceFront = pow(abs(((valFront - 720.870) / 271) + 0.065), 0.5);
-  int valRight = readSensor(IR_RIGHT);
-  float absDistanceRight = pow(abs(((valRight - 596.321) / 401) - 0.041), 0.5);
-  
-  switch (curState.zone) {
-    if (debug) {
+  // value is then mapped to conform to the 0-1 cm range it can see
+  float valLeft = readSensor(IR_LEFT);
+  float absDistanceLeft = pow(abs((valLeft - 624.279) / 355), 0.5) - 0.045;
+  absDistanceLeft = absScale(absScale(absDistanceLeft, 0.61, 0.97), 0.2, 1.0);
+  float valFront = readSensor(IR_FRONT);
+  float absDistanceFront = pow(abs((valFront - 488.434) / 652), 0.5) - 0.127;
+  absDistanceFront = absScale(absDistanceFront, 0.3, 0.75);
+  float valRight = readSensor(IR_RIGHT);
+  float absDistanceRight = pow(abs((valRight - 300.789) / 626), 0.5) + 0.018;
+  absDistanceRight = absScale(absDistanceRight, 0.41, 1.06);
+
+  if (debug && debugSensor) {
       Serial.print("Left Sensor: ");
-      Serial.print(valLeft);
+      Serial.print(absDistanceLeft);
       Serial.print("\nFront Sensor: ");
-      Serial.print(valFront);
+      Serial.print(absDistanceFront);
       Serial.print("\nRight Sensor: ");
-      Serial.print(valRight);
+      Serial.print(absDistanceRight);
       Serial.print("\n");
-    }
-      case ZONE_LEFT_CLOSE:
+  }
+
+  switch (curState.zone) {
+    case ZONE_LEFT_CLOSE:
       switch (curState.dir) {
         case LEFT: // Turning left
-          if (curState.side == LEFT && valLeft <= valLeftTarget) {
-          // Line going from left side of the left sensor to the right side
+          if (curState.side == LEFT && absDistanceLeft <= distanceTarget) {
+            // Line going from left side of the left sensor to the right side
             curState.side = RIGHT;
-          } else if (curState.side == RIGHT && valLeft >= valLeftMax) {
-          // Line going from right side of the left sensor to between left and front sensors
+          } else if (curState.side == RIGHT && absDistanceLeft >= distanceMax) {
+            // Line going from right side of the left sensor to between left and front sensors
             curState.zone = ZONE_LEFT_GAP;
           }
-        break;
-      default:
-        break;
+          break;
+        default:
+          break;
       }
       break;
     case ZONE_LEFT_GAP:
       switch (curState.dir) {
         case RIGHT: // Turning right
-          if (valLeft <= valLeftMax) {
+          if (absDistanceLeft <= distanceMax) {
             // Line going from between the left and front sensors to the left sensor
             curState.zone = ZONE_LEFT_CLOSE;
             curState.side = RIGHT;
             curState.dir = LEFT;
           }
         case LEFT: // Turning left
-          if (valFront <= valFrontMax) {
+          if (absDistanceFront <= distanceMax) {
             // Line going from between the left and front sensors to the front sensor
             curState.zone = ZONE_FRONT;
             curState.side = LEFT;
           }
-        break;
+          break;
         default:
-        break;
+          break;
       }
       break;
     case ZONE_FRONT:
-      if (valLeft <= 980) { // Line is by the right sensor, robot drifting left
+      if (absDistanceLeft <= distanceMax) { // Line is by the right sensor, robot drifting left
         curState.zone = ZONE_LEFT_CLOSE;
         curState.dir = LEFT;
         curState.side = RIGHT;
-      } else if (valRight <= 980) { // Line is by the left sensor, robot drifting right
+      } else if (absDistanceRight <= distanceMax) { // Line is by the left sensor, robot drifting right
         curState.zone = ZONE_RIGHT_CLOSE;
         curState.dir = RIGHT;
         curState.side = LEFT;
@@ -298,81 +358,89 @@ double getLocation() {
     case ZONE_RIGHT_GAP:
       switch (curState.dir) {
         case LEFT: // Turning left
-          if (valRight <= valRightMax) {
+          if (absDistanceRight <= distanceMax) {
             // Line going from between the right and front sensors to the right sensor
             curState.zone = ZONE_RIGHT_CLOSE;
             curState.side = LEFT;
             curState.dir = RIGHT;
           }
         case RIGHT: // Turning right
-          if (valFront <= valFrontMax) {
+          if (absDistanceFront <= distanceMax) {
             // Line going from between the right and front sensors to the front sensor
             curState.zone = ZONE_FRONT;
             curState.side = RIGHT;
           }
-        break;
+          break;
         default:
-        break;
+          break;
       }
       break;
     case ZONE_RIGHT_CLOSE:
       switch (curState.dir) {
         case RIGHT: // Turning right
-          if (curState.side == RIGHT && valRight <= valRightTarget) {
+          if (curState.side == RIGHT && absDistanceRight <= distanceTarget) {
             // Line going from the right side of right sensor to the left side
             curState.side = LEFT;
-          } else if (curState.side == LEFT && valRight >= valRightMax) {
+          } else if (curState.side == LEFT && absDistanceRight >= distanceMax) {
             // Line going from the left side of front sensor to between the right and front sensors
             curState.zone = ZONE_RIGHT_GAP;
           }
-        break;
+          break;
         default:
           break;
       }
       break;
   }
 
+  float distance = 0;
   // Get the distance from the location and the side its on
   switch (curState.zone) {
     case ZONE_LEFT_CLOSE:
       if (curState.side == LEFT) {
-        return 4 + absDistanceLeft;
+        distance = 4 + absDistanceLeft;
       } else if (curState.side == RIGHT) {
-        return 4 - absDistanceLeft;
+        distance = 4 - absDistanceLeft;
       }
       break;
     case ZONE_LEFT_GAP:
-      return 2;
+      distance = 2;
       break;
     case ZONE_FRONT:
-      return 0 + absDistanceFront;
+      distance = 0 + absDistanceFront;
       break;
     case ZONE_RIGHT_GAP:
-      return 2;
+      distance = 2;
       break;
     case ZONE_RIGHT_CLOSE:
       if (curState.side == LEFT) {
-        return 4 - absDistanceRight;
+        distance = 4 - absDistanceRight;
       } else if (curState.side == RIGHT) {
-        return 4 + absDistanceRight;
+        distance = 4 + absDistanceRight;
       }
       break;
-  } 
+  }
+
+  if (debug && debugSensor) {
+    Serial.print("Distance: ");
+    Serial.print(distance);
+    Serial.print("\n");
+  }
+
+  return distance;
 }
 
 // PID
 void movementCalculation(Direction* dir, double* output) {
   unsigned long timeCur = millis();
-  double timeChange = timeCur - timeOld;
+  unsigned long timeChange = timeCur - timeOld;
 
   // get and update location
   double locationCur = getLocation();
 
   // goal location is '0' -> line directly in center
   double error = locationCur;
-  double errorChange = (locationCur - locationOld) / timeChange;
-  errorSum += (error * timeChange);
-
+  double errorChange = (locationCur - locationOld) / timeChange * 1000;
+  errorSum += int(error * timeChange);
   if (error < -0.5) {
     if (*dir != RIGHT) {
       errorSum = 0;
@@ -388,16 +456,35 @@ void movementCalculation(Direction* dir, double* output) {
     *dir = FORWARD;
   }
 
-  *output = (kp * error) + (kd * errorChange) + (ki * errorSum);
+  if (debug && debugPID) {
+    double kpAmount = kp * error;
+    double kdAmount = kd * errorChange;
+    double kiAmount = ki * errorSum;
+    Serial.print("Delta t: ");
+    Serial.print(timeChange);
+    Serial.print("\nError: ");
+    Serial.print(error);
+    Serial.print("\nError change: ");
+    Serial.print(errorChange);
+    Serial.print("\nError sum: ");
+    Serial.print(errorSum);
+    Serial.print("\nkp amount: ");
+    Serial.print(kpAmount);
+    Serial.print("\nkd amount: ");
+    Serial.print(kdAmount);
+    Serial.print("\nki amount: ");
+    Serial.print(kiAmount);
+  }
 
+  *output = (kp * error) + (kd * errorChange) + (ki * errorSum);
   // Save old values
   locationOld = locationCur;
   timeOld = timeCur;
 }
 
 void kickstart() {
-    analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
-    analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
+  analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
+  analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
 }
 
 void setup() {
@@ -417,7 +504,7 @@ void setup() {
   curState.dir = FORWARD;
 
   if (debug) {
-  Serial.begin(9600);
+    Serial.begin(9600);
   }
 
   powerLED(ALL, ON);
@@ -427,75 +514,71 @@ void setup() {
   powerLED(RED, OFF);
   delay(1500);
   powerLED(BLUE, OFF);
-  
- // Kickstart
-    powerLED(GREEN, ON);
-    analogWrite(LEFT_MOTOR, 0);
-    analogWrite(RIGHT_MOTOR, 0);
-    analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
-    analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
-    delay(20);
+
+  // Kickstart
+  powerLED(GREEN, ON);
+  analogWrite(LEFT_MOTOR, 0);
+  analogWrite(RIGHT_MOTOR, 0);
+  analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
+  analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
+  delay(20);
 }
 
 void loop() {
   if (curState.side == NONE) {
     setDirection();
   } else {
-    movementCalculation(&dir, &ammount);
-    powerMotor(curState.zone, ammount);  
-    if (debug) {
-      Serial.print("Ammount: ");
-      Serial.println(ammount);
-    }
+    movementCalculation(&dir, &amount);
+    powerMotor(curState.zone, amount);
   }
 
   powerLED(BLUE, OFF);
   powerLED(GREEN, OFF);
   powerLED(RED, OFF);
 
-if (debug) {
-  Serial.print("Zone: ");
-  Zone currentzone = curState.zone;
-  switch (currentzone) {
-    case ZONE_LEFT_CLOSE:
-      Serial.println("ZONE LEFT CLOSE");
-      break;
-    case ZONE_LEFT_GAP:
-      Serial.println("ZONE LEFT GAP");
-      break;
-    case ZONE_FRONT:
-      Serial.println("ZONE FRONT");
-      break;
-    case ZONE_RIGHT_GAP:
-      Serial.println("ZONE RIGHT GAP");
-      break;
-    case ZONE_RIGHT_CLOSE:
-      Serial.println("ZONE RIGHT CLOSE");
-      break;
+  if (debug && debugZone) {
+    Serial.print("Zone: ");
+    Zone currentzone = curState.zone;
+    switch (currentzone) {
+      case ZONE_LEFT_CLOSE:
+        Serial.println("ZONE LEFT CLOSE");
+        break;
+      case ZONE_LEFT_GAP:
+        Serial.println("ZONE LEFT GAP");
+        break;
+      case ZONE_FRONT:
+        Serial.println("ZONE FRONT");
+        break;
+      case ZONE_RIGHT_GAP:
+        Serial.println("ZONE RIGHT GAP");
+        break;
+      case ZONE_RIGHT_CLOSE:
+        Serial.println("ZONE RIGHT CLOSE");
+        break;
     }
     Serial.print("Currently on: ");
     Direction currentside = curState.side;
     switch (currentside) {
       case LEFT:
         Serial.println("LEFT");
-      break;
+        break;
       case RIGHT:
         Serial.println("RIGHT");
-      break;
+        break;
       default:
-      break;
+        break;
     }
     Serial.print("Currently moving: ");
     Direction currentdir = curState.dir;
     switch (currentdir) {
       case LEFT:
         Serial.println("LEFT");
-      break;
+        break;
       case RIGHT:
         Serial.println("RIGHT");
-      break;
+        break;
       default:
-      break;
+        break;
     }
-}  
+  }
 }
