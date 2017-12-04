@@ -52,6 +52,9 @@ enum IRSENSOR {
 #define IRSensor_Left   A3
 #define IRSensor_Right  A7
 
+#define SpeedSensor_Right A4
+#define SpeedSensor_Left A5
+
 // END *************************************/
 
 // LEDs ************************************/
@@ -59,6 +62,9 @@ enum IRSENSOR {
 #define LED_R 6
 #define LED_G 5
 #define LED_B 7
+
+#define SpeedLED_Right 9
+#define SpeedLED_Left 10
 
 enum LED {
   RED,
