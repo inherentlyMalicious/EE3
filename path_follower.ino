@@ -34,9 +34,9 @@ typedef struct state State;
 
 State curState;
 
+unsigned long stopDeltaT = 200; // milliseconds
 unsigned long lastLeftRead = stopDeltaT + 10;
 unsigned long lastRightRead = 0;
-unsigned long stopDeltaT = 200; // milliseconds
 
 // END **************************************/
 
@@ -105,7 +105,7 @@ unsigned long timeOld = 0;
 double errorSum = 0;
 
 double kp = 30;
-double kd = -1;
+double kd = -1.1;
 double ki = 0;
 
 // END *************************************/
