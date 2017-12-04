@@ -1,0 +1,20 @@
+\relax 
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{graph:sRawFront}{{1a}{3}}
+\newlabel{sub@graph:sRawFront}{{a}{3}}
+\newlabel{graph:sRawLeft}{{1b}{3}}
+\newlabel{sub@graph:sRawLeft}{{b}{3}}
+\newlabel{graph:sRawRight}{{1c}{3}}
+\newlabel{sub@graph:sRawRight}{{c}{3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces \textbf  {Raw readings from the IR sensor, IR phototransistor combinations used on our path-following robot.} From the graphs, the value of the maximum readings range from about $400$ for Graph 2c\hbox {} to about $600$ for Graph \G@refundefinedtrue {\unhbox \voidb@x \hbox {\normalfont  \bfseries  ??}}\GenericWarning  {               }{LaTeX Warning: Reference `graph:sMarkedLeft' on page 3 undefined}. Also worth noting is that the sensors each reach a global minimum around $0cm$ and slope downwards when moving from \raisebox  {.2ex}{$\scriptstyle \pm $}$1cm$ from the black line. This is optimal since the symmetry of the readings allow us to use an even polynomial function to obtain the distance from the sensor readings.\relax }}{3}}
+\newlabel{graph:sRaw}{{\caption@xref {graph:sRaw}{ on input line 274}}{3}}
+\newlabel{graph:sMappedFront}{{2a}{4}}
+\newlabel{sub@graph:sMappedFront}{{a}{4}}
+\newlabel{graph:sMappedLeft}{{2b}{4}}
+\newlabel{sub@graph:sMappedLeft}{{b}{4}}
+\newlabel{graph:sMappedRight}{{2c}{4}}
+\newlabel{sub@graph:sMappedRight}{{c}{4}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces \textbf  {Adjusted sensor readings using a crude polynomial fit of the data from Graphs 1a\hbox {}, 1b\hbox {}, and 1c\hbox {} with a degree $n=2$ and then mapping to expand the range across the sensors line of sight ($0$ to $1cm$).} By using a polynomial fit of the sensor reading ($y$) versus the distance from the line ($x$) and solving in terms $y$, we are able to both find the distance from our readings and preserve each sensors local minimum at $0cm$. From there, we need to adjust the values to fit our known distribution and therefore simply map it as shown. By doing this, we see that our data better fits the distribution and is able to give us more valuable information to use with our PID function as the same change in the sensor reading returns a more significant change (and accurate) change in calculated distance from the line.\relax }}{4}}
+\newlabel{graph:sMapped}{{\caption@xref {graph:sMapped}{ on input line 406}}{4}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Comparison between actual and measured distance (from our getLocation() function) between center of $2cm$ thin black line and center of robot's front sensor. The red zone in the figure represent the area for which the black line is not within the range of the left, front, or right sensors. The calculated distance for these areas is just the average value of the actual distance. Looking at this graph, the calculated distance is generally accurate to within less than half a centimeter. Most importantly, the graph slopes to a minimum from both sides, an important feature if a function is to be used for a PID controller.\relax }}{5}}
+\newlabel{graph:sensorTest}{{3}{5}}

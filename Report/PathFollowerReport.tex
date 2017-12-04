@@ -10,6 +10,15 @@
 \usepackage{graphicx}
 \usepackage{etoolbox}
 \usepackage[normalem]{ulem}    
+\usepackage{tikz}
+\usepackage{float}
+\usepackage{subcaption}
+\usetikzlibrary{shapes.geometric, intersections, patterns}
+\usepackage{pgf, pgfcore, pgfplots, pgfplotstable}
+\usepgfplotslibrary{fillbetween}
+\pgfplotsset{compat=newest}
+
+\newcommand{\rpm}{\raisebox{.2ex}{$\scriptstyle\pm$}}
 
 %% https://tex.stackexchange.com/questions/211415/how-to-set-up-listings-for-use-code-from-arduino
 \newcommand*{\FormatDigit}[1]{\ttfamily\textcolor{mygreen}{#1}}
@@ -156,6 +165,311 @@
 		\textReferences \\ \vspace{1em}
 			
 	\end{flushleft}
+	
+	
+\begin{figure}
+	\centering{
+		\begin{subfigure}{0.45\textwidth}
+			\centering
+			\begin{tikzpicture}[
+			every node/.style={text=black},
+			fdesc/.default=1
+			]
+			
+			\pgfplotsset{
+				width=2.5in,
+				height=2.5in,
+				legend style={font=\footnotesize}
+			}
+			\begin{axis}[
+			xlabel={Distance from Line, $cm$ ($centimeters$).},
+			ylabel={Sensor Reading, $value$ ($arb.$).},
+			xmin=-2, xmax=2,
+			xtick distance=1,
+			ymin=0, ymax=1000,
+			ytick distance=200,
+			]
+			
+			%% Marks %%
+			\addplot [
+			color=black,
+			mark=*,
+			mark options={fill=black},
+			mark size=1pt
+			] table [col sep=comma, y=f, x=d]{sensorsRaw.csv};
+			\end{axis}
+			\end{tikzpicture}
+			\caption{Front Sensor}
+			\vspace{0.5em}
+			\label{graph:sRawFront}
+		\end{subfigure}\\
+		\begin{subfigure}{0.45\textwidth}
+			\centering
+			\begin{tikzpicture}[
+			every node/.style={text=black},
+			fdesc/.default=1
+			]
+			
+			\pgfplotsset{
+				width=2.5in,
+				height=2.5in,
+				legend style={font=\footnotesize}
+			}
+			\begin{axis}[
+			xlabel={Distance from Line, $cm$ ($centimeters$).},
+			ylabel={Sensor Reading, $value$ ($arb.$).},
+			xmin=-2, xmax=2,
+			xtick distance=1,
+			ymin=0, ymax=1000,
+			ytick distance=200,
+			]
+			
+			\addplot [
+			color=black,
+			mark=*,
+			mark options={fill=black},
+			mark size=1pt
+			] table [col sep=comma, y=l, x=d]{sensorsRaw.csv};
+			\end{axis}
+			\end{tikzpicture}
+			\caption{Left Sensor}
+			\label{graph:sRawLeft}
+		\end{subfigure}%
+		\hfill
+		\begin{subfigure}{0.45\textwidth}
+			\centering
+			\begin{tikzpicture}[
+			every node/.style={text=black},
+			fdesc/.default=1
+			]
+			
+			\pgfplotsset{
+				width=2.5in,
+				height=2.5in,
+				legend style={font=\footnotesize}
+			}
+			\begin{axis}[
+			xlabel={Distance from Line, $cm$ ($centimeters$).},
+			ylabel={Sensor Reading, $value$ ($arb.$).},
+			xmin=-2, xmax=2,
+			xtick distance=1,
+			ymin=0, ymax=1000,
+			ytick distance=200,
+			]
+			
+			%% Marks %%
+			\addplot [
+			color=black,
+			mark=*,
+			mark options={fill=black},
+			mark size=1pt
+			] table [col sep=comma, y=r, x=d]{sensorsRaw.csv};
+			\end{axis}
+			\end{tikzpicture}
+			\caption{Right Sensor}
+			\label{graph:sRawRight}
+		\end{subfigure}
+		\caption{\textbf{Raw readings from the IR sensor, IR phototransistor combinations used on our path-following robot.} From the graphs, the value of the maximum readings range from about $400$ for Graph \ref{graph:sMappedRight} to about $600$ for Graph \ref{graph:sMarkedLeft}. Also worth noting is that the sensors each reach a global minimum around $0cm$ and slope downwards when moving from \rpm$1cm$ from the black line. This is optimal since the symmetry of the readings allow us to use an even polynomial function to obtain the distance from the sensor readings.}
+	}
+	\label{graph:sRaw}
+\end{figure}
+
+		\begin{figure}
+		\centering{
+			\begin{subfigure}{0.45\textwidth}
+				\centering
+				\begin{tikzpicture}[
+				every node/.style={text=black},
+				fdesc/.default=1
+				]
+				
+				\pgfplotsset{
+					width=2.5in,
+					height=2.5in,
+					legend style={font=\footnotesize}
+				}
+				\begin{axis}[
+				xlabel={Distance from Line, $cm$ ($centimeters$).},
+				ylabel={Adjusted Sensor Reading, $value$ ($arb.$).},
+				xmin=-1, xmax=1,
+				xtick distance=0.5,
+				ymin=0, ymax=1,
+				ytick distance=0.2,
+				]
+				
+				%% Marks %%
+				\addplot [
+				color=black,
+				mark=*,
+				mark options={fill=black},
+				mark size=1pt
+				] table [col sep=comma, y=fr, x=d]{sensorsMapped.csv};
+				
+				\addplot [
+				color=blue,
+				mark=*,
+				mark options={fill=blue},
+				mark size=1pt
+				] table [col sep=comma, y=fm, x=d]{sensorsMapped.csv};
+				
+				\end{axis}
+				\end{tikzpicture}
+				\caption{Front Sensor}
+				\vspace{0.5em}
+				\label{graph:sMappedFront}
+			\end{subfigure}\\%
+			\begin{subfigure}{0.45\textwidth}
+				\centering
+				\begin{tikzpicture}[
+				every node/.style={text=black},
+				fdesc/.default=1
+				]
+				
+				\pgfplotsset{
+					width=2.5in,
+					height=2.5in,
+					legend style={font=\footnotesize}
+				}
+				\begin{axis}[
+				xlabel={Distance from Line, $cm$ ($centimeters$).},
+				ylabel={Adjusted Sensor Reading, $value$ ($arb.$).},
+				xmin=-1, xmax=1,
+				xtick distance=0.5,
+				ymin=0, ymax=1,
+				ytick distance=0.2,
+				]
+				
+				\addplot [
+				color=black,
+				mark=*,
+				mark options={fill=black},
+				mark size=1pt
+				] table [col sep=comma, y=lr, x=d]{sensorsMapped.csv};
+			
+				%% Marks %%
+				\addplot [
+				color=blue,
+				mark=*,
+				mark options={fill=blue},
+				mark size=1pt
+				] table [col sep=comma, y=lm, x=d]{sensorsMapped.csv};
+			
+				\end{axis}
+				\end{tikzpicture}
+				\caption{Left Sensor}
+				\label{graph:sMappedLeft}
+			\end{subfigure}%
+			\hfill
+			\begin{subfigure}{0.45\textwidth}
+				\centering
+				\begin{tikzpicture}[
+				every node/.style={text=black},
+				fdesc/.default=1
+				]
+				
+				\pgfplotsset{
+					width=2.5in,
+					height=2.5in,
+					legend style={font=\footnotesize}
+				}
+				\begin{axis}[
+				xlabel={Distance from Line, $cm$ ($centimeters$).},
+				ylabel={Adjusted Sensor Reading, $value$ ($arb.$).},
+				xmin=-1, xmax=1,
+				xtick distance=0.5,
+				ymin=0, ymax=1,
+				ytick distance=0.2,
+				]
+				
+				%% Marks %%
+				\addplot [
+				color=black,
+				mark=*,
+				mark options={fill=black},
+				mark size=1pt
+				] table [col sep=comma, y=rr, x=d]{sensorsMapped.csv};
+
+				%% Marks %%
+				\addplot [
+				color=blue,
+				mark=*,
+				mark options={fill=blue},
+				mark size=1pt
+				] table [col sep=comma, y=rm, x=d]{sensorsMapped.csv};
+				\end{axis}
+				\end{tikzpicture}
+				\caption{Right Sensor}
+				\label{graph:sMappedRight}
+			\end{subfigure}
+			\caption{\textbf{Adjusted sensor readings using a crude polynomial fit of the data from Graphs \ref{graph:sRawFront}, \ref{graph:sRawLeft}, and \ref{graph:sRawRight} with a degree $n=2$ and then mapping to expand the range across the sensors line of sight ($0$ to $1cm$).} By using a polynomial fit of the sensor reading ($y$) versus the distance from the line ($x$) and solving in terms $y$, we are able to both find the distance from our readings and preserve each sensors local minimum at $0cm$. From there, we need to adjust the values to fit our known distribution and therefore simply map it as shown. By doing this, we see that our data better fits the distribution and is able to give us more valuable information to use with our PID function as the same change in the sensor reading returns a more significant change (and accurate) change in calculated distance from the line.}%Lissajous graphs of damped oscillations at, below, and above resonance.} An oscillation at resonance, Graph \ref{graph:lOnResonance} is circular; on the other hand, Graph \ref{graph:lBelowResonance} is below resonance as it is shaped like an ellipse tilted to the right while Graph \ref{graph:lAboveResonance} is above reference as it is shaped like an ellipse tilted to the left. The uncertainty for any Lissajous is the change in frequency from $\omega_{R}$ at which the figure is no longer visibly symmetric.}
+		}
+		\label{graph:sMapped}
+	\end{figure}
+
+			\begin{figure}
+			\centering
+			\begin{tikzpicture}[
+			every node/.style={text=black},
+			fdesc/.default=1
+			]
+			
+			\pgfplotsset{
+				width=5in,
+				height=5in,
+				legend style={font=\footnotesize}
+			}
+			\begin{axis}[
+			xlabel={Distance From Line, $cm$ ($centimeters$).},
+			ylabel={Absolute Distance From Line, $cm$ ($centimeters$).},
+%			xmin=-1.25, xmax=1.25,
+%			xtick distance=0.5,
+%			ymin=-0.08, ymax=0.07,
+%			ytick distance=0.03,
+			xticklabel style={
+				/pgf/number format/fixed,
+				/pgf/number format/precision=2
+			},
+			scaled x ticks=false,
+			yticklabel style={
+				/pgf/number format/fixed,
+				/pgf/number format/precision=2
+			},
+			scaled y ticks=false,
+			]
+			
+			%% Marks %%
+			\addplot [
+			color=blue,
+			mark=*,
+			mark options={fill=blue},
+			mark size=0.5pt,
+			] table [col sep=comma, y=m, x=d]{sensorsTest.csv};
+			\addlegendentry{Actual Distance};
+			
+			\addplot [
+			color=black,
+			mark=*,
+			mark options={fill=black},
+			mark size=0.5pt,
+			] table [col sep=comma, y=a, x=d]{sensorsTest.csv};
+			\addlegendentry{Calculated Distance};
+			
+			\draw [name path=leftBoundLeft, dashed, red] (-2.75,0) -- (-2.75,4);
+			\draw [name path=leftBoundRight, dashed, red] (-1.25,0) -- (-1.25,4);
+			\addplot [red!70!white,fill opacity=.2] fill between[
+			of=leftBoundLeft and leftBoundRight];
+
+			\draw [name path=rightBoundLeft, dashed] (3,0) -- (3,4);
+			\draw [name path=rightBoundRight, dashed, red] (1,0) -- (1,4);
+			\addplot [red!70!white,fill opacity=.2] fill between[
+			of=rightBoundLeft and rightBoundRight] ;
+			
+			\end{axis}
+			\end{tikzpicture}
+			\caption{Comparison between actual and measured distance (from our getLocation() function) between center of $2cm$ thin black line and center of robot's front sensor. The red zone in the figure represent the area for which the black line is not within the range of the left, front, or right sensors. The calculated distance for these areas is just the average value of the actual distance. Looking at this graph, the calculated distance is generally accurate to within less than half a centimeter. Most importantly, the graph slopes to a minimum from both sides, an important feature if a function is to be used for a PID controller.}
+			\vspace{0.5em}
+			\label{graph:sensorTest}
+		\end{figure}
 	
 %\begin{figure}[h]
 %	\centering
