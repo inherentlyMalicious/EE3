@@ -38,6 +38,24 @@ unsigned long stopDeltaT = 200; // milliseconds
 unsigned long lastLeftRead = stopDeltaT + 10;
 unsigned long lastRightRead = 0;
 
+int lastSensorLeft = 0;
+volatile unsigned long lastSensorLeftTime = 0;
+int testLeft;
+int lastSensorRight = 0;
+volatile unsigned long lastSensorRightTime = 0;
+int testRight;
+double leftValue;
+double rightValue;
+double lastLeftValue = 0;
+double lastRightValue = 0;
+
+const double spokeNumber = 20;
+const float spokeRadius = 1.3;
+
+volatile double speedLeft = -1;
+volatile unsigned long ms = 0;
+double speedRight = -1;
+
 // END **************************************/
 
 // Sensors *********************************/
@@ -52,19 +70,16 @@ enum IRSENSOR {
 #define IRSensor_Left   A3
 #define IRSensor_Right  A7
 
-#define SpeedSensor_Right A4
-#define SpeedSensor_Left A5
+#define SpeedSensor_Right 2
+#define SpeedSensor_Left 3
 
 // END *************************************/
 
 // LEDs ************************************/
 
-#define LED_R 6
-#define LED_G 5
-#define LED_B 7
-
-#define SpeedLED_Right 9
-#define SpeedLED_Left 10
+#define LED_R 7
+#define LED_G 6
+#define LED_B 8
 
 enum LED {
   RED,
@@ -81,9 +96,9 @@ const int OFF = 0;
 // Motor ***********************************/
 
 #define LEFT_MOTOR      11
-#define RIGHT_MOTOR     3
+#define RIGHT_MOTOR     5
 
-const float LEFT_RIGHT_MOTOR_RATIO = 1.2;
+const float LEFT_RIGHT_MOTOR_RATIO = 1.3;
 
 const int LEFT_MOTOR_OFFVALUE = 41;
 const int LEFT_MOTOR_THRESHOLD = 51;
@@ -99,6 +114,9 @@ const int RIGHT_MOTOR_FRONT_BASEVALUE = 87;
 const int RIGHT_MOTOR_FRONT_KICKSTART = 111;
 const int RIGHT_MOTOR_MAX = 200;
 
+volatile boolean leftMotorStopped = false;
+volatile boolean rightMotorStopped = false;
+
 // END **************************************/
 
 // PID **************************************/
@@ -112,17 +130,29 @@ double errorSum = 0;
 
 double kp = 30;
 double kd = -1.1;
-double ki = 0;
+double ki = 0;//0.05;
 
 // END *************************************/
 
 // Debugging *******************************/
 
-const boolean debug = false;
+const boolean debug = true;
 const boolean debugMotor = false;
 const boolean debugSensor = false;
 const boolean debugPID = false;
 const boolean debugZone = false;
+
+const boolean debugExtraCredit = true;
+
+int leftFlashCount = 0;
+unsigned long leftFlashTime = 0;
+int rightFlashCount = 0;
+unsigned long rightFlashTime = 0;
+
+const boolean followPath = false;
+const boolean extraCredit = true;
+boolean testedRight = false;
+boolean testedLeft = false;
 
 // END *************************************/
 
@@ -506,11 +536,128 @@ void kickstart() {
   analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
 }
 
+
+void motorCheck() {
+  if (rightMotorStopped) {
+    powerLED(BLUE, ON);
+  }
+  if (leftMotorStopped) {
+    powerLED(RED, ON);
+  }
+  delay(50);
+  if (rightMotorStopped) {
+    powerLED(BLUE, OFF);
+  }
+  if (leftMotorStopped) {
+    powerLED(RED, OFF);
+  }
+  delay(150);
+  if (rightMotorStopped) {
+    powerLED(BLUE, ON);
+  }
+  if (leftMotorStopped) {
+    powerLED(RED, ON);
+  }
+  delay(50);
+  if (rightMotorStopped) {
+    powerLED(BLUE, OFF);
+  }
+  if (leftMotorStopped) {
+    powerLED(RED, OFF);
+  }
+  delay(150);
+  if (rightMotorStopped) {
+    powerLED(BLUE, ON);
+  }
+  if (leftMotorStopped) {
+    powerLED(RED, ON);
+  }
+  delay(50);
+  if (rightMotorStopped) {
+    powerLED(BLUE, OFF);
+  }
+  if (leftMotorStopped) {
+    powerLED(RED, OFF);
+  }
+  delay(150);
+  if (rightMotorStopped) {
+    powerLED(BLUE, ON);
+  }
+  if (leftMotorStopped) {
+    powerLED(RED, ON);
+  }
+  delay(50);
+  if (rightMotorStopped) {
+    powerLED(BLUE, OFF);
+  }
+  if (leftMotorStopped) {
+    powerLED(RED, OFF);
+  }
+  delay(150);
+  if (rightMotorStopped) {
+    powerLED(BLUE, ON);
+  }
+  if (leftMotorStopped) {
+    powerLED(RED, ON);
+  }
+  delay(50);
+  if (rightMotorStopped) {
+    powerLED(BLUE, OFF);
+  }
+  if (leftMotorStopped) {
+    powerLED(RED, OFF);
+  }
+  
+  if (rightMotorStopped) {
+    analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
+      rightMotorStopped = false;
+  }
+  if (leftMotorStopped) {
+    analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
+      leftMotorStopped = false;
+  }
+
+}
+
+void getLeftSpeed() {
+  lastSensorLeftTime = millis();
+//    if (ms - lastSensorLeftTime > 200) {
+//      leftMotorStopped = true;
+//      testedLeft = true;
+//    } else {
+//      leftMotorStopped = false;
+//    }
+//    lastSensorLeftTime = ms;
+}
+
+void getRightSpeed() {
+  lastSensorRightTime = millis();
+//    if (ms - lastSensorRightTime > 200) {
+//      rightMotorStopped = true;
+//      testedRight = true;
+//    } else {
+//      rightMotorStopped = false;
+//    }
+//    lastSensorRightTime = ms;
+}
+
 void setup() {
   pinMode(A0, INPUT);
   pinMode(A3, INPUT);
   pinMode(A7, INPUT);
 
+  if (extraCredit) {
+    //ms = millis();
+
+    pinMode(SpeedSensor_Left, INPUT);
+
+    attachInterrupt(digitalPinToInterrupt(SpeedSensor_Left), getLeftSpeed, RISING);
+    
+    pinMode(SpeedSensor_Right, INPUT);  
+
+    attachInterrupt(digitalPinToInterrupt(SpeedSensor_Right), getRightSpeed, RISING);
+  }
+  
   pinMode(LED_R, OUTPUT);
   pinMode(LED_G, OUTPUT);
   pinMode(LED_B, OUTPUT);
@@ -542,9 +689,100 @@ void setup() {
   analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
   analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
   delay(20);
+
+  lastSensorLeftTime = millis();
+  lastSensorRightTime = millis();
 }
 
 void loop() {
+  if (extraCredit) {
+    
+    int leftMotorSpeed = LEFT_MOTOR_FRONT_KICKSTART;
+    int rightMotorSpeed = RIGHT_MOTOR_FRONT_KICKSTART+5;
+
+    boolean enabledLeftLED = false;
+    boolean enabledRightLED = false;
+//    lastSensorLeftTime = millis();
+//    lastSensorRightTime = millis();
+
+    while (true) {
+      //ms = millis();
+
+//int rightFlashCount = 0;
+//unsigned long rightFlashTime = 0;
+
+
+      if (millis() - lastSensorLeftTime > 5000) {
+        leftMotorStopped = true;
+        leftFlashCount = 0;
+      }
+      if (millis() - rightSensorLeftTime > 5000) {
+        rightMotorStopped = true;
+        rightFlashCount = 0;
+      }
+
+      if (leftFlashCount == 5) {
+        analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
+        leftMotorSpeed = LEFT_MOTOR_FRONT_KICKSTART;
+        leftFlashCount = 0;
+        leftSensorLeftTime = millis();
+        }
+      if (leftMotorStopped) {
+        if (!enabledLeftLED && millis() - leftFlashTime > 150) {
+          powerLED(RED, ON);
+          enabledLeftLED = true;
+          leftFlashTime = millis();
+        } else if {enabledLeftLED && millis() - leftFlashTime > 50)
+          powerLED(RED, OFF);
+          enabledLeftLED = false;
+          leftFlashCount++;
+          leftFlashTime = millis();
+        }
+      }
+      if (rightFlashCount == 5) {
+        analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
+        rightMotorSpeed = RIGHT_MOTOR_FRONT_KICKSTART;
+        rightFlashCount = 0;
+        rightSensorRightTime = millis();
+        }
+      if (rightMotorStopped) {
+        if (!enabledLeftLED && millis() - rightFlashTime > 150) {
+          powerLED(BLUE, ON);
+          enabledRightLED = true;
+          rightFlashTime = millis();
+        } else if {enabledRightLED && millis() - rightFlashTime > 50)
+          powerLED(BLUE, OFF);
+          enabledRightLED = false;
+          rightFlashCount++;
+          rightFlashTime = millis();
+        }
+      }
+      
+      if (leftMotorSpeed > 0 && !leftMotorStopped) {
+        if (leftMotorStopped) {
+          Serial.print("LEFT: OFF\n");
+        } else {
+          Serial.print("LEFT: ON\n");
+        }
+        leftMotorSpeed--;
+        analogWrite(LEFT_MOTOR, leftMotorSpeed);
+      }
+      if (rightMotorSpeed > 0 && !rightMotorSpeed) {
+        if (rightMotorStopped) {
+          Serial.print("RIGHT: OFF\n");
+        } else {
+          Serial.print("RIGHT: ON\n");
+        }
+        rightMotorSpeed--;
+        analogWrite(RIGHT_MOTOR, rightMotorSpeed);          
+      }
+
+//        motorCheck();
+        delay(30);
+
+      }
+  } else if (followPath) {
+  
   if (readSensor(IR_LEFT) < 980) {
     lastLeftRead = millis();
   }
@@ -613,5 +851,6 @@ void loop() {
           break;
       }
     }
+  }
   }
 }
