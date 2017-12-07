@@ -34,28 +34,12 @@ typedef struct state State;
 
 State curState;
 
-unsigned long stopDeltaT = 200; // milliseconds
-unsigned long lastLeftRead = stopDeltaT + 10;
+unsigned long stopDeltaT = 1000; // milliseconds
+unsigned long lastLeftRead = 0;
 unsigned long lastRightRead = 0;
 
-int lastSensorLeft = 0;
 volatile unsigned long lastSensorLeftTime = 0;
-int testLeft;
-int lastSensorRight = 0;
 volatile unsigned long lastSensorRightTime = 0;
-int testRight;
-double leftValue;
-double rightValue;
-double lastLeftValue = 0;
-double lastRightValue = 0;
-
-const double spokeNumber = 20;
-const float spokeRadius = 1.3;
-
-volatile double speedLeft = -1;
-volatile unsigned long ms = 0;
-double speedRight = -1;
-
 // END **************************************/
 
 // Sensors *********************************/
@@ -73,6 +57,11 @@ enum IRSENSOR {
 #define SpeedSensor_Right 2
 #define SpeedSensor_Left 3
 
+int leftFlashCount = 0;
+unsigned long leftFlashTime = 0;
+
+int rightFlashCount = 0;
+unsigned long rightFlashTime = 0;
 // END *************************************/
 
 // LEDs ************************************/
@@ -142,17 +131,7 @@ const boolean debugSensor = false;
 const boolean debugPID = false;
 const boolean debugZone = false;
 
-const boolean debugExtraCredit = true;
-
-int leftFlashCount = 0;
-unsigned long leftFlashTime = 0;
-int rightFlashCount = 0;
-unsigned long rightFlashTime = 0;
-
-const boolean followPath = false;
-const boolean extraCredit = true;
-boolean testedRight = false;
-boolean testedLeft = false;
+const boolean testStopDetection = true;
 
 // END *************************************/
 
@@ -536,109 +515,12 @@ void kickstart() {
   analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
 }
 
-
-void motorCheck() {
-  if (rightMotorStopped) {
-    powerLED(BLUE, ON);
-  }
-  if (leftMotorStopped) {
-    powerLED(RED, ON);
-  }
-  delay(50);
-  if (rightMotorStopped) {
-    powerLED(BLUE, OFF);
-  }
-  if (leftMotorStopped) {
-    powerLED(RED, OFF);
-  }
-  delay(150);
-  if (rightMotorStopped) {
-    powerLED(BLUE, ON);
-  }
-  if (leftMotorStopped) {
-    powerLED(RED, ON);
-  }
-  delay(50);
-  if (rightMotorStopped) {
-    powerLED(BLUE, OFF);
-  }
-  if (leftMotorStopped) {
-    powerLED(RED, OFF);
-  }
-  delay(150);
-  if (rightMotorStopped) {
-    powerLED(BLUE, ON);
-  }
-  if (leftMotorStopped) {
-    powerLED(RED, ON);
-  }
-  delay(50);
-  if (rightMotorStopped) {
-    powerLED(BLUE, OFF);
-  }
-  if (leftMotorStopped) {
-    powerLED(RED, OFF);
-  }
-  delay(150);
-  if (rightMotorStopped) {
-    powerLED(BLUE, ON);
-  }
-  if (leftMotorStopped) {
-    powerLED(RED, ON);
-  }
-  delay(50);
-  if (rightMotorStopped) {
-    powerLED(BLUE, OFF);
-  }
-  if (leftMotorStopped) {
-    powerLED(RED, OFF);
-  }
-  delay(150);
-  if (rightMotorStopped) {
-    powerLED(BLUE, ON);
-  }
-  if (leftMotorStopped) {
-    powerLED(RED, ON);
-  }
-  delay(50);
-  if (rightMotorStopped) {
-    powerLED(BLUE, OFF);
-  }
-  if (leftMotorStopped) {
-    powerLED(RED, OFF);
-  }
-  
-  if (rightMotorStopped) {
-    analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
-      rightMotorStopped = false;
-  }
-  if (leftMotorStopped) {
-    analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
-      leftMotorStopped = false;
-  }
-
-}
-
 void getLeftSpeed() {
   lastSensorLeftTime = millis();
-//    if (ms - lastSensorLeftTime > 200) {
-//      leftMotorStopped = true;
-//      testedLeft = true;
-//    } else {
-//      leftMotorStopped = false;
-//    }
-//    lastSensorLeftTime = ms;
 }
 
 void getRightSpeed() {
   lastSensorRightTime = millis();
-//    if (ms - lastSensorRightTime > 200) {
-//      rightMotorStopped = true;
-//      testedRight = true;
-//    } else {
-//      rightMotorStopped = false;
-//    }
-//    lastSensorRightTime = ms;
 }
 
 void setup() {
@@ -646,9 +528,7 @@ void setup() {
   pinMode(A3, INPUT);
   pinMode(A7, INPUT);
 
-  if (extraCredit) {
-    //ms = millis();
-
+  if (testStopDetection) {
     pinMode(SpeedSensor_Left, INPUT);
 
     attachInterrupt(digitalPinToInterrupt(SpeedSensor_Left), getLeftSpeed, RISING);
@@ -687,101 +567,98 @@ void setup() {
   analogWrite(LEFT_MOTOR, 0);
   analogWrite(RIGHT_MOTOR, 0);
   analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
-  analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
+  analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART+10);
   delay(20);
 
-  lastSensorLeftTime = millis();
-  lastSensorRightTime = millis();
+
+  if (testStopDetection) {
+    lastSensorLeftTime = millis();
+    leftFlashTime = millis();
+    lastSensorRightTime = millis();
+    rightFlashTime = millis();
+  }
 }
 
 void loop() {
-  if (extraCredit) {
-    
+  if (testStopDetection) {
     int leftMotorSpeed = LEFT_MOTOR_FRONT_KICKSTART;
-    int rightMotorSpeed = RIGHT_MOTOR_FRONT_KICKSTART+5;
+    int rightMotorSpeed = RIGHT_MOTOR_FRONT_KICKSTART+10;
 
     boolean enabledLeftLED = false;
+    boolean startingLeftMotor = false;
     boolean enabledRightLED = false;
-//    lastSensorLeftTime = millis();
-//    lastSensorRightTime = millis();
+    boolean startingRightMotor = false;
 
-    while (true) {
-      //ms = millis();
-
-//int rightFlashCount = 0;
-//unsigned long rightFlashTime = 0;
-
-
-      if (millis() - lastSensorLeftTime > 5000) {
+    while (true) { // run forever, this is just to verify detection of stopped wheels
+      // time between sensor reads is greater than threshold
+      if (millis() - lastSensorLeftTime > stopDeltaT) {
         leftMotorStopped = true;
         leftFlashCount = 0;
+        lastSensorLeftTime = millis();
       }
-      if (millis() - rightSensorLeftTime > 5000) {
+      if (millis() - lastSensorRightTime > stopDeltaT) {
         rightMotorStopped = true;
         rightFlashCount = 0;
+        lastSensorRightTime= millis();
       }
 
-      if (leftFlashCount == 5) {
-        analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
-        leftMotorSpeed = LEFT_MOTOR_FRONT_KICKSTART;
-        leftFlashCount = 0;
-        leftSensorLeftTime = millis();
-        }
       if (leftMotorStopped) {
+        // pulse LED about 5 times a second for 1 second
         if (!enabledLeftLED && millis() - leftFlashTime > 150) {
           powerLED(RED, ON);
           enabledLeftLED = true;
           leftFlashTime = millis();
-        } else if {enabledLeftLED && millis() - leftFlashTime > 50)
+        } else if (enabledLeftLED && millis() - leftFlashTime > 50) {
           powerLED(RED, OFF);
           enabledLeftLED = false;
           leftFlashCount++;
           leftFlashTime = millis();
         }
       }
-      if (rightFlashCount == 5) {
-        analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART);
-        rightMotorSpeed = RIGHT_MOTOR_FRONT_KICKSTART;
-        rightFlashCount = 0;
-        rightSensorRightTime = millis();
+      if (leftFlashCount == 5) { // At end of pulses, reset conditions
+        powerLED(RED, OFF);
+        analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
+        leftMotorSpeed = LEFT_MOTOR_FRONT_KICKSTART;
+        leftFlashCount = 0;
+        leftMotorStopped = false;
+        lastSensorLeftTime = millis();
         }
+      
       if (rightMotorStopped) {
-        if (!enabledLeftLED && millis() - rightFlashTime > 150) {
+        // pulse LED about 5 times a second for 1 second
+        if (!enabledRightLED && millis() - rightFlashTime > 50) {
           powerLED(BLUE, ON);
           enabledRightLED = true;
           rightFlashTime = millis();
-        } else if {enabledRightLED && millis() - rightFlashTime > 50)
+        } else if (enabledRightLED && millis() - rightFlashTime > 150) {
           powerLED(BLUE, OFF);
           enabledRightLED = false;
           rightFlashCount++;
           rightFlashTime = millis();
         }
       }
-      
-      if (leftMotorSpeed > 0 && !leftMotorStopped) {
-        if (leftMotorStopped) {
-          Serial.print("LEFT: OFF\n");
-        } else {
-          Serial.print("LEFT: ON\n");
+      if (rightFlashCount == 5) { // at end of pulses, reset conditions
+        powerLED(BLUE, OFF);
+        analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART + 10);
+        rightMotorSpeed = RIGHT_MOTOR_FRONT_KICKSTART + 10;
+        rightFlashCount = 0;
+        rightMotorStopped = false;
+        lastSensorRightTime = millis();
         }
+
+      // only write if motor speeds are non-zero
+      if (leftMotorSpeed > 0) {
         leftMotorSpeed--;
         analogWrite(LEFT_MOTOR, leftMotorSpeed);
       }
-      if (rightMotorSpeed > 0 && !rightMotorSpeed) {
-        if (rightMotorStopped) {
-          Serial.print("RIGHT: OFF\n");
-        } else {
-          Serial.print("RIGHT: ON\n");
-        }
+      if (rightMotorSpeed > 0) {
         rightMotorSpeed--;
         analogWrite(RIGHT_MOTOR, rightMotorSpeed);          
       }
 
-//        motorCheck();
-        delay(30);
-
-      }
-  } else if (followPath) {
+      delay(30);
+    }
+  }else {
   
   if (readSensor(IR_LEFT) < 980) {
     lastLeftRead = millis();
