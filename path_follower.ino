@@ -34,10 +34,11 @@ typedef struct state State;
 
 State curState;
 
-unsigned long stopDeltaT = 1000; // milliseconds
+unsigned long stopDeltaT = 100; // milliseconds
 unsigned long lastLeftRead = 0;
-unsigned long lastRightRead = 0;
+unsigned long lastRightRead = stopDeltaT + 10;
 
+unsigned long detectionDeltaT = 500; // milliseconds
 volatile unsigned long lastSensorLeftTime = 0;
 volatile unsigned long lastSensorRightTime = 0;
 // END **************************************/
@@ -87,19 +88,19 @@ const int OFF = 0;
 #define LEFT_MOTOR      11
 #define RIGHT_MOTOR     5
 
-const float LEFT_RIGHT_MOTOR_RATIO = 1.3;
+const float LEFT_RIGHT_MOTOR_RATIO = 1.7;
 
 const int LEFT_MOTOR_OFFVALUE = 41;
 const int LEFT_MOTOR_THRESHOLD = 51;
 const int LEFT_MOTOR_BASEVALUE = 55;
-const int LEFT_MOTOR_FRONT_BASEVALUE = 81;
+const int LEFT_MOTOR_FRONT_BASEVALUE = 121;//81;
 const int LEFT_MOTOR_FRONT_KICKSTART = 108;
 const int LEFT_MOTOR_MAX = 200;
 
 const int RIGHT_MOTOR_OFFVALUE = 38;
 const int RIGHT_MOTOR_THRESHOLD = 48;
 const int RIGHT_MOTOR_BASEVALUE = 62;
-const int RIGHT_MOTOR_FRONT_BASEVALUE = 87;
+const int RIGHT_MOTOR_FRONT_BASEVALUE = 131;//87;
 const int RIGHT_MOTOR_FRONT_KICKSTART = 111;
 const int RIGHT_MOTOR_MAX = 200;
 
@@ -117,21 +118,21 @@ double locationOld = 0;
 unsigned long timeOld = 0;
 double errorSum = 0;
 
-double kp = 30;
-double kd = -1.1;
-double ki = 0;//0.05;
+double kp = 35;
+double kd = -1.3;
+double ki = 0.01;
 
 // END *************************************/
 
 // Debugging *******************************/
 
-const boolean debug = true;
+const boolean debug = false;
 const boolean debugMotor = false;
 const boolean debugSensor = false;
 const boolean debugPID = false;
 const boolean debugZone = false;
 
-const boolean testStopDetection = true;
+const boolean testStopDetection = false;
 
 // END *************************************/
 
@@ -327,13 +328,13 @@ double getLocation() {
   absDistanceRight = absScale(absDistanceRight, 0.41, 1.06);
 
   if (debug && debugSensor) {
-      Serial.print("Left Sensor: ");
-      Serial.print(absDistanceLeft);
-      Serial.print("\nFront Sensor: ");
-      Serial.print(absDistanceFront);
-      Serial.print("\nRight Sensor: ");
-      Serial.print(absDistanceRight);
-      Serial.print("\n");
+    Serial.print("Left Sensor: ");
+    Serial.print(absDistanceLeft);
+    Serial.print("\nFront Sensor: ");
+    Serial.print(absDistanceFront);
+    Serial.print("\nRight Sensor: ");
+    Serial.print(absDistanceRight);
+    Serial.print("\n");
   }
 
   switch (curState.zone) {
@@ -465,7 +466,7 @@ void movementCalculation(Direction* dir, double* output) {
   // get and update location
   double locationCur = getLocation();
 
-  // goal location is '0' -> line directly in center
+  // Goal location is '0' -> line directly in center
   double error = locationCur;
   double errorChange = (locationCur - locationOld) / timeChange * 1000;
   errorSum += int(error * timeChange);
@@ -528,16 +529,6 @@ void setup() {
   pinMode(A3, INPUT);
   pinMode(A7, INPUT);
 
-  if (testStopDetection) {
-    pinMode(SpeedSensor_Left, INPUT);
-
-    attachInterrupt(digitalPinToInterrupt(SpeedSensor_Left), getLeftSpeed, RISING);
-    
-    pinMode(SpeedSensor_Right, INPUT);  
-
-    attachInterrupt(digitalPinToInterrupt(SpeedSensor_Right), getRightSpeed, RISING);
-  }
-  
   pinMode(LED_R, OUTPUT);
   pinMode(LED_G, OUTPUT);
   pinMode(LED_B, OUTPUT);
@@ -567,11 +558,16 @@ void setup() {
   analogWrite(LEFT_MOTOR, 0);
   analogWrite(RIGHT_MOTOR, 0);
   analogWrite(LEFT_MOTOR, LEFT_MOTOR_FRONT_KICKSTART);
-  analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART+10);
+  analogWrite(RIGHT_MOTOR, RIGHT_MOTOR_FRONT_KICKSTART + 10);
   delay(20);
 
-
   if (testStopDetection) {
+    pinMode(SpeedSensor_Left, INPUT);
+    pinMode(SpeedSensor_Right, INPUT);
+
+    attachInterrupt(digitalPinToInterrupt(SpeedSensor_Left), getLeftSpeed, RISING);
+    attachInterrupt(digitalPinToInterrupt(SpeedSensor_Right), getRightSpeed, RISING);
+
     lastSensorLeftTime = millis();
     leftFlashTime = millis();
     lastSensorRightTime = millis();
@@ -582,7 +578,7 @@ void setup() {
 void loop() {
   if (testStopDetection) {
     int leftMotorSpeed = LEFT_MOTOR_FRONT_KICKSTART;
-    int rightMotorSpeed = RIGHT_MOTOR_FRONT_KICKSTART+10;
+    int rightMotorSpeed = RIGHT_MOTOR_FRONT_KICKSTART + 10;
 
     boolean enabledLeftLED = false;
     boolean startingLeftMotor = false;
@@ -591,15 +587,15 @@ void loop() {
 
     while (true) { // run forever, this is just to verify detection of stopped wheels
       // time between sensor reads is greater than threshold
-      if (millis() - lastSensorLeftTime > stopDeltaT) {
+      if (millis() - lastSensorLeftTime > detectionDeltaT) {
         leftMotorStopped = true;
         leftFlashCount = 0;
         lastSensorLeftTime = millis();
       }
-      if (millis() - lastSensorRightTime > stopDeltaT) {
+      if (millis() - lastSensorRightTime > detectionDeltaT) {
         rightMotorStopped = true;
         rightFlashCount = 0;
-        lastSensorRightTime= millis();
+        lastSensorRightTime = millis();
       }
 
       if (leftMotorStopped) {
@@ -622,8 +618,8 @@ void loop() {
         leftFlashCount = 0;
         leftMotorStopped = false;
         lastSensorLeftTime = millis();
-        }
-      
+      }
+
       if (rightMotorStopped) {
         // pulse LED about 5 times a second for 1 second
         if (!enabledRightLED && millis() - rightFlashTime > 50) {
@@ -644,7 +640,7 @@ void loop() {
         rightFlashCount = 0;
         rightMotorStopped = false;
         lastSensorRightTime = millis();
-        }
+      }
 
       // only write if motor speeds are non-zero
       if (leftMotorSpeed > 0) {
@@ -653,81 +649,81 @@ void loop() {
       }
       if (rightMotorSpeed > 0) {
         rightMotorSpeed--;
-        analogWrite(RIGHT_MOTOR, rightMotorSpeed);          
+        analogWrite(RIGHT_MOTOR, rightMotorSpeed);
       }
 
       delay(30);
     }
-  }else {
-  
-  if (readSensor(IR_LEFT) < 980) {
-    lastLeftRead = millis();
-  }
-  if (readSensor(IR_RIGHT) < 980) {
-    lastRightRead = millis();
-  }
+  } else {
 
-  if (abs(lastRightRead - lastLeftRead) <= stopDeltaT) {
-    curState.complete = true;
-    powerLED(ALL, OFF);
-    powerMotor(ZONE_END, 0);
-  }
-  
-  if (!curState.complete) {
-    if (curState.side == NONE) {
-      setDirection();
-    } else {
-      movementCalculation(&dir, &amount);
-      powerMotor(curState.zone, amount);
+    if (readSensor(IR_LEFT) < 980) {
+      lastLeftRead = millis();
     }
-  
-    powerLED(ALL, OFF);
-    
-    if (debug && debugZone) {
-      Serial.print("Zone: ");
-      Zone currentzone = curState.zone;
-      switch (currentzone) {
-        case ZONE_LEFT_CLOSE:
-          Serial.println("ZONE LEFT CLOSE");
-          break;
-        case ZONE_LEFT_GAP:
-          Serial.println("ZONE LEFT GAP");
-          break;
-        case ZONE_FRONT:
-          Serial.println("ZONE FRONT");
-          break;
-        case ZONE_RIGHT_GAP:
-          Serial.println("ZONE RIGHT GAP");
-          break;
-        case ZONE_RIGHT_CLOSE:
-          Serial.println("ZONE RIGHT CLOSE");
-          break;
+    if (readSensor(IR_RIGHT) < 980) {
+      lastRightRead = millis();
+    }
+
+    if (abs(lastRightRead - lastLeftRead) <= stopDeltaT) {
+      curState.complete = true;
+      powerLED(ALL, OFF);
+      powerMotor(ZONE_END, 0);
+    }
+
+    if (!curState.complete) {
+      if (curState.side == NONE) {
+        setDirection();
+      } else {
+        movementCalculation(&dir, &amount);
+        powerMotor(curState.zone, amount);
       }
-      Serial.print("Currently on: ");
-      Direction currentside = curState.side;
-      switch (currentside) {
-        case LEFT:
-          Serial.println("LEFT");
-          break;
-        case RIGHT:
-          Serial.println("RIGHT");
-          break;
-        default:
-          break;
-      }
-      Serial.print("Currently moving: ");
-      Direction currentdir = curState.dir;
-      switch (currentdir) {
-        case LEFT:
-          Serial.println("LEFT");
-          break;
-        case RIGHT:
-          Serial.println("RIGHT");
-          break;
-        default:
-          break;
+
+      powerLED(ALL, OFF);
+
+      if (debug && debugZone) {
+        Serial.print("Zone: ");
+        Zone currentzone = curState.zone;
+        switch (currentzone) {
+          case ZONE_LEFT_CLOSE:
+            Serial.println("ZONE LEFT CLOSE");
+            break;
+          case ZONE_LEFT_GAP:
+            Serial.println("ZONE LEFT GAP");
+            break;
+          case ZONE_FRONT:
+            Serial.println("ZONE FRONT");
+            break;
+          case ZONE_RIGHT_GAP:
+            Serial.println("ZONE RIGHT GAP");
+            break;
+          case ZONE_RIGHT_CLOSE:
+            Serial.println("ZONE RIGHT CLOSE");
+            break;
+        }
+        Serial.print("Currently on: ");
+        Direction currentside = curState.side;
+        switch (currentside) {
+          case LEFT:
+            Serial.println("LEFT");
+            break;
+          case RIGHT:
+            Serial.println("RIGHT");
+            break;
+          default:
+            break;
+        }
+        Serial.print("Currently moving: ");
+        Direction currentdir = curState.dir;
+        switch (currentdir) {
+          case LEFT:
+            Serial.println("LEFT");
+            break;
+          case RIGHT:
+            Serial.println("RIGHT");
+            break;
+          default:
+            break;
+        }
       }
     }
-  }
   }
 }
