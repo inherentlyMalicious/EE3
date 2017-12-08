@@ -4,6 +4,8 @@
 \usepackage[style=nature, backend=biber]{biblatex}
 \addbibresource{refs.bib}
 
+\usepackage{array,booktabs,csvsimple,longtable,tabularx}
+\usepackage{tabu}
 \usepackage[utf8]{inputenc}
 \usepackage{listings}
 \usepackage{color} %red, green, blue, yellow, cyan, magenta, black, white
@@ -22,7 +24,10 @@
 \usepackage{pgf, pgfcore, pgfplots, pgfplotstable}
 \usepgfplotslibrary{fillbetween}
 \pgfplotsset{compat=newest}
+\usepackage{pgfplotstable, dcolumn}
+\usepackage{fixltx2e}
 
+\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
 \newcommand{\rpm}{\raisebox{.2ex}{$\scriptstyle\pm$}}
 
 %% https://tex.stackexchange.com/questions/211415/how-to-set-up-listings-for-use-code-from-arduino
@@ -139,7 +144,7 @@
 		
 		\textIntroOne \\ \vspace{1em}
 		
-		\begin{figure}[!h]
+		\begin{figure}[!htb]
 
 			\centering{\textbf{Circuits for Path Sensing and Movement}\par\medskip}
 			{\begin{subfigure}[b]{0.45\textwidth}
@@ -165,7 +170,7 @@
 
 		\textTestDesign \\ \vspace{1em}
 		
-		\begin{figure}[!H]
+		\begin{figure}[H]
 			
 			\centering{\textbf{Circuits for Path Sensing and Movement}\par\medskip}
 			{\begin{subfigure}[b]{0.45\textwidth}
@@ -196,7 +201,7 @@
 		\textTestInterpretation \\ \vspace{1em}
 		
 
-\begin{figure*}[!B]
+\begin{figure*}[!b]
 	\centering{
 		\centering{\textbf{Raw Readings From Sensors}\par\medskip}
 		\begin{subfigure}{\columnwidth}
@@ -209,7 +214,7 @@
 			\pgfplotsset{
 				width=2.5in,
 				height=2.5in,
-				legend style={font=\footnotesize}
+				legend style={cells={align=left}, at={(axis cs:1.8,50)},anchor=south east, font=\footnotesize}
 			}
 			\begin{axis}[
 			xlabel={Distance from Line, $cm$ ($centimeters$).},
@@ -225,8 +230,14 @@
 			color=black,
 			mark=*,
 			mark options={fill=black},
-			mark size=1pt
+			mark size=1pt,
+			forget plot
 			] table [col sep=comma, y=f, x=d]{sensorsRaw.csv};
+			
+			%% Polynomic Regression
+			\addplot [color=red, smooth] {652*x*x+166*x+499};
+			\addlegendentry{$652x^2+166x+499$\\$r^2=0.989$};
+			
 			\end{axis}
 			\end{tikzpicture}
 			\caption{Front Sensor}
@@ -243,7 +254,7 @@
 			\pgfplotsset{
 				width=2.5in,
 				height=2.5in,
-				legend style={font=\footnotesize}
+				legend style={cells={align=left}, at={(axis cs:1.8,50)},anchor=south east, font=\footnotesize}
 			}
 			\begin{axis}[
 			xlabel={Distance from Line, $cm$ ($centimeters$).},
@@ -258,8 +269,14 @@
 			color=black,
 			mark=*,
 			mark options={fill=black},
-			mark size=1pt
+			mark size=1pt,
+			forget plot
 			] table [col sep=comma, y=l, x=d]{sensorsRaw.csv};
+
+			%% Polynomic Regression
+			\addplot [color=red, smooth] {355*x*x+32*x+625};
+			\addlegendentry{$355x^2+32x+625$\\$r^2=0.951$};
+
 			\end{axis}
 			\end{tikzpicture}
 			\caption{Left Sensor}
@@ -275,7 +292,7 @@
 			\pgfplotsset{
 				width=2.5in,
 				height=2.5in,
-				legend style={font=\footnotesize}
+				legend style={cells={align=left}, at={(axis cs:1.8,50)},anchor=south east, font=\footnotesize}
 			}
 			\begin{axis}[
 			xlabel={Distance from Line, $cm$ ($centimeters$).},
@@ -291,8 +308,14 @@
 			color=black,
 			mark=*,
 			mark options={fill=black},
-			mark size=1pt
+			mark size=1pt,
+			forget plot
 			] table [col sep=comma, y=r, x=d]{sensorsRaw.csv};
+			
+			%% Polynomic Regression
+			\addplot [color=red, smooth] {626*x*x-23*x+301};
+			\addlegendentry{$626x^2-23x+301$\\$r^2=0.927$};
+			
 			\end{axis}
 			\end{tikzpicture}
 			\caption{Right Sensor}
@@ -321,7 +344,7 @@
 		\sectionTitle{References}
 			
 		\textReferences \\ \vspace{1em}
-		\printbibliography
+%		\printbibliography
 
 	\end{flushleft}
 	
@@ -530,6 +553,75 @@
 			\label{graph:sensorTest}
 		}
 		\end{figure*}
+
+%	\begin{tabular}{| c | ccc |}\hline%
+%		\bfseries Absolute Distance (cm) & {\bfseries Sensor Value (arb.)}
+%		\toprule \\
+%		\csvreader[head to column names]{sensorsRaw.csv}{} % 
+%		{\d & \l & \f & \r } % 
+%		\\\hline
+%	\end{tabular}
+
+	\begin{table}
+		\centering{\textbf{Raw Data from Sensors}\par\medskip}
+		\pgfplotstabletypeset[
+		column type=,
+		begin table={\begin{tabularx}{.8\columnwidth}{D{.}{.}{0} X X X}},
+			end table={\end{tabularx}},
+		col sep=comma,
+		columns/d/.style={{column name=\textbf{Distance} $\ (cm.)$}, fixed, fixed zerofill, precision=2},
+		columns/l/.style={column name=Left},
+		columns/f/.style={column name=Front},
+		columns/r/.style={column name=Right},
+		every head row/.style={before row={
+				\toprule
+				\multicolumn{1}{c}{} & \multicolumn{3}{c}{\textbf{Sensor Values} $(arb.)$}\\
+				\cmidrule{2-4}
+			},after row=\toprule},
+		every last row/.style={after row=\bottomrule},
+	]{sensorsRaw.csv}
+	\caption{text}
+\end{table}
+\begin{table*}
+	\ra{1.3}
+	\centering{\textbf{Adjusted and Mapped Distance from Sensors}\par\medskip}
+	\pgfplotstabletypeset[
+	column type=,
+	begin table={\begin{tabularx}{1.5\columnwidth}{D{.}{.}{0} X X X X X X}},
+		end table={\end{tabularx}},
+	col sep=comma,
+	columns/d/.style={{column name={\textbf{Distance} $\ (cm.)$}}, fixed, fixed zerofill, precision=2},
+	columns/rr/.style={column name=Right}, fixed, fixed zerofill, precision=2,
+	columns/fr/.style={column name=Front}, fixed, fixed zerofill, precision=2,
+	columns/lr/.style={column name=Left}, fixed, fixed zerofill, precision=2,
+	columns/rm/.style={column name=Right}, fixed, fixed zerofill, precision=2,
+	columns/fm/.style={column name=Front}, fixed, fixed zerofill, precision=2,
+	columns/lm/.style={column name=Left}, fixed, fixed zerofill, precision=2,
+	every head row/.style={before row={
+		\toprule
+			\multicolumn{1}{c}{} & \multicolumn{3}{c}{\textbf{Distance, Adjusted $(cm.)$}} & \multicolumn{3}{c}{\textbf{Distance, Mapped $(cm.)$}}\\
+			\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+		},after row=\toprule},
+	every last row/.style={after row=\bottomrule},
+	]{sensorsMapped.csv}
+	\caption{text}
+\end{table*}
+\begin{table}
+	\ra{1.3}
+	\centering{\textbf{Adjusted and Mapped Distance from Sensors}\par\medskip}
+	\pgfplotstabletypeset[
+	column type=,
+	begin table={\begin{tabularx}{1.2\columnwidth}{D{.}{.}{0} X X}},
+		end table={\end{tabularx}},
+	col sep=comma,
+	columns/d/.style={{column name={\textbf{Distance} $\ (cm.)$}}, fixed, fixed zerofill, precision=2},
+	columns/a/.style={column name={\textbf{Actual} $\ (cm.)$}}, fixed, fixed zerofill, precision=2,
+	columns/m/.style={column name={\textbf{Measured} $\ (cm.)$}}, fixed, fixed zerofill, precision=2,
+	every head row/.style={before row=\toprule, after row=\toprule},
+	every last row/.style={after row=\bottomrule},
+	]{sensorsTest.csv}
+	\caption{text}
+\end{table}
 	
 %\begin{figure}[h]
 %	\centering
