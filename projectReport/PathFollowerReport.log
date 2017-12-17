@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2017.10.29)  9 DEC 2017 19:50
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2017.10.29)  17 DEC 2017 03:59
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1386,38 +1386,38 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
  [4]
 PGFPlots: reading {sensorsRaw.csv}
 
-Overfull \hbox (2.85345pt too wide) in paragraph at lines 232--232
+Overfull \hbox (2.85345pt too wide) in paragraph at lines 233--233
 []|\OT1/cmr/m/n/10 Front| 
  []
 
 
-Overfull \hbox (3.38123pt too wide) in paragraph at lines 232--232
+Overfull \hbox (3.38123pt too wide) in paragraph at lines 233--233
 []|\OT1/cmr/m/n/10 Right| 
  []
 
 
-Overfull \hbox (11.10315pt too wide) in alignment at lines 232--232
+Overfull \hbox (11.10315pt too wide) in alignment at lines 233--233
 [][][][] 
  []
 
 PGFPlots: reading {sensorsMapped.csv}
 
-Overfull \hbox (7.30997pt too wide) in alignment at lines 257--257
+Overfull \hbox (7.30997pt too wide) in alignment at lines 258--258
 [][][][][][][] 
  []
 
 PGFPlots: reading {sensorsTest.csv}
 
-Underfull \hbox (badness 10000) in alignment at lines 274--274
+Underfull \hbox (badness 10000) in alignment at lines 275--275
 [][][] 
  []
 
 PGFPlots: reading {sensorsRaw.csv}
 Missing character: There is no ; in font nullfont!
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 315.
+(Font)              <8> on input line 316.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 315.
+(Font)              <6> on input line 316.
 PGFPlots: reading {sensorsRaw.csv}
 Missing character: There is no ; in font nullfont!
 PGFPlots: reading {sensorsRaw.csv}
@@ -1432,7 +1432,7 @@ PGFPlots: reading {sensorsTest.csv}
 Missing character: There is no ; in font nullfont!
 PGFPlots: reading {sensorsTest.csv}
 Missing character: There is no ; in font nullfont!
-Package pgfplots info on input line 597: fill between: activating layered graph
+Package pgfplots info on input line 598: fill between: activating layered graph
 ics
 \pgf@layerbox@axis background=\box55
 \pgf@layerboxsaved@axis background=\box56
@@ -1450,7 +1450,7 @@ ics
 \pgf@layerboxsaved@axis descriptions=\box68
 \pgf@layerbox@axis foreground=\box69
 \pgf@layerboxsaved@axis foreground=\box70
-Package pgfplots info on input line 597: Setting layers 'axis background,axis g
+Package pgfplots info on input line 598: Setting layers 'axis background,axis g
 rid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis
  foreground'...
 [5
@@ -1463,7 +1463,7 @@ Package logreq Info: Writing requests to 'PathFollowerReport.run.xml'.
 Here is how much of TeX's memory you used:
  34223 strings out of 492990
  818513 string characters out of 6136333
- 1389704 words of memory out of 5000000
+ 1387703 words of memory out of 5000000
  37225 multiletter control sequences out of 15000+600000
  8500 words of font info for 31 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -1483,7 +1483,7 @@ e1/public/amsfonts/cm/cmsy7.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/
 amsfonts/cm/cmsy8.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/c
 m/cmti10.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.
 pfb>
-Output written on PathFollowerReport.pdf (10 pages, 836435 bytes).
+Output written on PathFollowerReport.pdf (10 pages, 836455 bytes).
 PDF statistics:
  108 PDF objects out of 1000 (max. 8388607)
  75 compressed objects within 1 object stream
